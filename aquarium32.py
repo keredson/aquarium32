@@ -2,6 +2,8 @@ import time
 import datetime
 import math
 
+import machine
+import neopixel
 try: import ntptime
 except: pass
 import suncalc
@@ -26,6 +28,7 @@ class Aquarium32:
     self.led_width = self.led_length / self.num_leds
     self.max_altitude = max([suncalc.getPosition(suncalc.getTimes(d, self.lat, self.lng)['solarNoon'], self.lat, self.lng)['altitude'] for d in [SUMMER_SOLSTICE,WINTER_SOLSTICE]])
     print('max_altitude', self.max_altitude)
+    self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
     
   
   def ntp_check(self):
@@ -55,7 +58,7 @@ class Aquarium32:
     led_lng_offsets = (-(x-self.num_leds/2+.5)/self.num_leds*2*10 for x in range(self.num_leds))
 #    print('led_lng_offsets', list(led_lng_offsets))
     sun_brightness = (self.calc_brightness(suncalc.getPosition(now, self.lat, self.lng+offset)) for offset in led_lng_offsets)
-    brightness = [int(round(x*255*0)) for x in sun_brightness]
+    brightness = [int(round(x*255)) for x in sun_brightness]
 
     moon_brightness = int(round(self.calc_brightness(moon) * moon['fraction'] * 255))
     print('moon_brightness', moon_brightness)
@@ -66,6 +69,9 @@ class Aquarium32:
     if moon_led is not None:
       brightness[moon_led] = min(255, brightness[moon_led] + moon_brightness)
     print('brightness', brightness)
+    for i, v in enumerate(brightness):
+      self.np[i] = (v,v,v)
+    self.np.write()
   
   def sim_day(self, start, seconds = 24, step_mins=1):
     ts = start.timestamp()
