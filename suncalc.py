@@ -43,10 +43,10 @@ def siderealTime(d, lw):
      return rad * (280.16 + 360.9856235 * d) - lw
 
 def toJulian(date):
-    return (time.mktime(date.timetuple()) * 1000) / dayMs - 0.5 + J1970
+    return (time.mktime(date.timetuple()) * 1000) / dayMs - 0.5 + J2000 # was J1970, but esp32 has 2000 epoch
 
 def fromJulian(j):
-    return datetime.fromtimestamp(((j + 0.5 - J1970) * dayMs)/1000.0)
+    return datetime.fromtimestamp(((j + 0.5) * dayMs)/1000.0)
 
 def toDays(date):   
     return toJulian(date) - J2000
@@ -58,7 +58,7 @@ def approxTransit(Ht, lw, n):
     return J0 + (Ht + lw) / (2 * PI) + n
 
 def solarTransitJ(ds, M, L):
-    return J2000 + ds + 0.0053 * sin(M) - 0.0069 * sin(2 * L)
+    return ds + 0.0053 * sin(M % (2*math.pi)) - 0.0069 * sin((2 * L) % (2*math.pi))
 
 def hourAngle(h, phi, d):
     try:
@@ -147,8 +147,8 @@ def getTimes(date, lat, lng, height=0):
     Jnoon = solarTransitJ(ds, M, L)
 
     result = dict(
-        solarNoon=fromJulian(Jnoon).strftime('%Y-%m-%d %H:%M:%S'),
-        nadir=fromJulian(Jnoon - 0.5).strftime('%Y-%m-%d %H:%M:%S')
+        solarNoon=fromJulian(Jnoon), #.strftime('%Y-%m-%d %H:%M:%S'),
+        nadir=fromJulian(Jnoon - 0.5) #.strftime('%Y-%m-%d %H:%M:%S')
     )
 
     for i in range(0, len(times)):
@@ -157,8 +157,8 @@ def getTimes(date, lat, lng, height=0):
 
         Jset = getSetJ(h0, lw, phi, dec, n, M, L)
         Jrise = Jnoon - (Jset - Jnoon)
-        result[time[1]] = fromJulian(Jrise).strftime('%Y-%m-%d %H:%M:%S')
-        result[time[2]] = fromJulian(Jset).strftime('%Y-%m-%d %H:%M:%S')
+        result[time[1]] = fromJulian(Jrise)#.strftime('%Y-%m-%d %H:%M:%S')
+        result[time[2]] = fromJulian(Jset)#.strftime('%Y-%m-%d %H:%M:%S')
 
     return result
 
@@ -179,6 +179,8 @@ def getMoonTimes(date, lat, lng):
     for i in range(1,25,2):
         h1 = getMoonPosition(hoursLater(t, i), lat, lng)["altitude"] - hc
         h2 = getMoonPosition(hoursLater(t, i + 1), lat, lng)["altitude"] - hc
+#        print('h1', h1)
+#        print('h2', h2)
 
         a = (h0 + h2) / 2 - h1
         b = (h2 - h0) / 2
@@ -256,7 +258,7 @@ def getPosition(date, lat, lng):
 
     c  = sunCoords(d)
     H  = siderealTime(d, lw) - c["ra"]
-    # print("d", d, "c",c,"H",H,"phi", phi)
+#    print("d", d, "c",c,"H",H,"phi", phi, 'lw', lw)
     return dict(
         azimuth=azimuth(H, phi, c["dec"]),
         altitude=altitude(H, phi, c["dec"])
