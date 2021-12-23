@@ -43,7 +43,7 @@ def siderealTime(d, lw):
      return rad * (280.16 + 360.9856235 * d) - lw
 
 def toJulian(date):
-    return (time.mktime(date.timetuple()) * 1000) / dayMs - 0.5 + J2000 # was J1970, but esp32 has 2000 epoch
+    return (time.mktime(tuple(date.timetuple())) * 1000) / dayMs - 0.5 + J2000 # was J1970, but esp32 has 2000 epoch
 
 def fromJulian(j):
     return datetime.fromtimestamp(((j + 0.5) * dayMs)/1000.0)
@@ -263,3 +263,4 @@ def getPosition(date, lat, lng):
         azimuth=azimuth(H, phi, c["dec"]),
         altitude=altitude(H, phi, c["dec"])
     )
+

@@ -365,4 +365,3 @@ def _wrap_strftime(object, format, timetuple):
     newformat = "".join(newformat)
     return _time.strftime(newformat, timetuple)
 
-

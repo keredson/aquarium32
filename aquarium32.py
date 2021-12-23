@@ -1,17 +1,18 @@
 import time
 import math
+import datetime
 
 try: 
   import machine
-  import _datetime as datetime
   import neopixel
   import ntptime
 except ImportError: 
   # not running on esp32
-  import datetime
+  pass
 
 import pysolar.solar
 import pysolar.util
+import suncalc
 
 MAX_RADIATION = 1500
 
@@ -54,6 +55,9 @@ class Aquarium32:
     print('radiation', radiation)
     leds = radiation / MAX_RADIATION * self.num_leds
     print('leds', leds)
+    moon = suncalc.getMoonPosition(now, self.lat, self.lng)
+    moon.update(suncalc.getMoonIllumination(now))
+    print('moon', moon)
     
     if radiation > 0:
       sun_center = azimuth / 180 * self.num_leds
@@ -67,34 +71,31 @@ class Aquarium32:
         stop = self.num_leds
       print('start', start, 'stop', stop)
 
-      brightness = [int(round(max(0, min(i+1, stop) - max(i,start))*255)) for i in range(self.num_leds)]    
+      brightness = [max(0, min(i+1, stop) - max(i,start)) for i in range(self.num_leds)]    
     else:
       brightness = [0 for i in range(self.num_leds)]    
 
     print('brightness', brightness)
 
-    if self.np:
-      for i, v in enumerate(brightness):
-        self.np[i] = (v,v,v)
-      self.np.write()
-
-    return
-    
-
-    sun_led = int(round(sun['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
-
-    moon_brightness = int(round(self.calc_brightness(moon) * moon['fraction'] * 255))
+    moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
     print('moon_brightness', moon_brightness)
     moon_led = int(round(moon['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
-    if moon_led<0 or moon_led>=self.num_leds:
-      moon_led = None
+    moon_led = max(0, min(moon_led, self.num_leds-1))
     print('moon_led', moon_led)
-    if moon_led is not None:
-      brightness[moon_led] = min(255, brightness[moon_led] + moon_brightness)
-    print('brightness', brightness)
-    for i, v in enumerate(brightness):
-      self.np[i] = (v,v,v)
-    self.np.write()
+
+    if self.np:
+      for i, v in enumerate(brightness):
+        r = max(0,int(round(v*255)))
+        g = max(0,int(round(v * min(255, altitude*10))))
+        b = max(0,int(round(v * min(255, (altitude-10)*10))))
+        self.np[i] = (r,g,b)
+      if moon_brightness:
+        r = max(0,int(round(moon_brightness * min(255, math.degrees(moon['altitude'])))))
+        g = r #max(0,int(round(moon_brightness * min(255, (math.degrees(moon['altitude'])-10)*10))))
+        b = max(0,int(round(moon_brightness*255)))
+        self.np[moon_led] = (r,g,b)
+      self.np.write()
+
   
   def sim_day(self, start, step_mins = 10):
     ts = start.timestamp()
