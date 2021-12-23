@@ -2,6 +2,13 @@ import time as _time
 import math as _math
 
 
+if hasattr(_time, 'struct_time'):
+  _struct_time = _time.struct_time
+else:
+  import collections
+  _struct_time = collections.namedtuple('struct_time', 'tm_year tm_mon tm_mday tm_hour tm_min tm_sec tm_wday tm_yday tm_isdst')
+
+
 def _cmp(x, y):
     return 0 if x == y else 1 if x > y else -1
 MINYEAR = 1
@@ -187,6 +194,8 @@ class datetime(date):
         return _build_struct_time(
             self.year, self.month, self.day, self.hour, self.minute, self.second, dst
         )
+    
+    utctimetuple = timetuple
 
     def timestamp(self):
         "Return POSIX timestamp as float"
@@ -300,9 +309,9 @@ def _build_struct_time(y, m, d, hh, mm, ss, dstflag):
     wday = (_ymd2ord(y, m, d) + 6) % 7
     dnum = _days_before_month(y, m) + d
     if hasattr(_time, 'struct_time'):
-      return _time.struct_time((y, m, d, hh, mm, ss, wday, dnum, dstflag))
+      return _struct_time((y, m, d, hh, mm, ss, wday, dnum, dstflag))
     else:
-      return (y, m, d, hh, mm, ss, wday, dnum)
+      return _struct_time(y, m, d, hh, mm, ss, wday, dnum, dstflag)
 
 def _wrap_strftime(object, format, timetuple):
     freplace = None  # the string to use for %f

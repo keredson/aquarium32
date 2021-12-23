@@ -1,20 +1,22 @@
 import time
-import datetime
 import math
 
-import machine
-import neopixel
-try: import ntptime
-except: pass
-import suncalc
+try: 
+  import machine
+  import _datetime as datetime
+  import neopixel
+  import ntptime
+except ImportError: 
+  # not running on esp32
+  import datetime
+
+import pysolar.solar
+import pysolar.util
+
+MAX_RADIATION = 1500
 
 
 NTP_CHECK_INTERVAL_SECONDS = 60*60*24*7
-
-SUMMER_SOLSTICE = datetime.datetime(2021,12,21)
-WINTER_SOLSTICE = datetime.datetime(2021,6,20)
-
-SUN_WIDTH = 0 #0.0872665 # rad
 
 class Aquarium32:
 
@@ -24,12 +26,11 @@ class Aquarium32:
     self.lat, self.lng = 37.7749, -122.4194
     self.num_leds = 144
     self.led_length = 1000 # mm
-    self.tank_width = 457 # mm
-    self.led_width = self.led_length / self.num_leds
-    self.max_altitude = max([suncalc.getPosition(suncalc.getTimes(d, self.lat, self.lng)['solarNoon'], self.lat, self.lng)['altitude'] for d in [SUMMER_SOLSTICE,WINTER_SOLSTICE]])
-    print('max_altitude', self.max_altitude)
-    self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
-    
+    try:
+      self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
+    except NameError:
+      # not in micropython / on esp32
+      self.np = None
   
   def ntp_check(self):
     if time.time() - self.last_ntp_check > NTP_CHECK_INTERVAL_SECONDS:
@@ -38,27 +39,49 @@ class Aquarium32:
         self.last_ntp_check = time.time()
       except Exception as e:
         print(e)
-
-  def calc_brightness(self, body):
-    altitude_brightness = max(0, math.sin((body['altitude']+SUN_WIDTH) / self.max_altitude * math.pi/2))
-    azimuth_brightness = abs(math.cos(body['azimuth']))
-    brightness = altitude_brightness * azimuth_brightness
-    return brightness
         
+      
+
+
   def main(self, now):
     self.ntp_check()
     print('at', now)
-    sun = suncalc.getPosition(now, self.lat, self.lng)
-    moon = suncalc.getMoonPosition(now, self.lat, self.lng)
-    moon.update(suncalc.getMoonIllumination(now))
-    #moon.update(suncalc.getMoonTimes(now, self.lat, self.lng))
-    print('sun', sun)
-    print('moon', moon)
+    altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
+    print('altitude', altitude)
+    azimuth = pysolar.solar.get_azimuth(self.lat, self.lng, now) - 90
+    print('azimuth', azimuth)
+    radiation = pysolar.util.diffuse_underclear(self.lat, self.lng, now)
+    print('radiation', radiation)
+    leds = radiation / MAX_RADIATION * self.num_leds
+    print('leds', leds)
+    
+    if radiation > 0:
+      sun_center = azimuth / 180 * self.num_leds
+      start = sun_center - leds/2
+      stop = sun_center + leds/2
+      if start < 0:
+        stop -= start
+        start = 0
+      elif stop > self.num_leds:
+        start -= stop - self.num_leds
+        stop = self.num_leds
+      print('start', start, 'stop', stop)
 
-    led_lng_offsets = (-(x-self.num_leds/2+.5)/self.num_leds*2*10 for x in range(self.num_leds))
-#    print('led_lng_offsets', list(led_lng_offsets))
-    sun_brightness = (self.calc_brightness(suncalc.getPosition(now, self.lat, self.lng+offset)) for offset in led_lng_offsets)
-    brightness = [int(round(x*255)) for x in sun_brightness]
+      brightness = [int(round(max(0, min(i+1, stop) - max(i,start))*255)) for i in range(self.num_leds)]    
+    else:
+      brightness = [0 for i in range(self.num_leds)]    
+
+    print('brightness', brightness)
+
+    if self.np:
+      for i, v in enumerate(brightness):
+        self.np[i] = (v,v,v)
+      self.np.write()
+
+    return
+    
+
+    sun_led = int(round(sun['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
 
     moon_brightness = int(round(self.calc_brightness(moon) * moon['fraction'] * 255))
     print('moon_brightness', moon_brightness)
@@ -73,7 +96,7 @@ class Aquarium32:
       self.np[i] = (v,v,v)
     self.np.write()
   
-  def sim_day(self, start, seconds = 24, step_mins=1):
+  def sim_day(self, start, step_mins = 10):
     ts = start.timestamp()
     for i in range(24*60//step_mins):
       self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
