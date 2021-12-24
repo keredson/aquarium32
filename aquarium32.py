@@ -152,17 +152,14 @@ class Aquarium32:
     print('moon_led', moon_led)
         
     def f(i, v):
-      if moon_brightness and i==moon_led:
-        r = max(0,moon_brightness * min(255, 2* math.degrees(moon_altitude)))
+      r = max(0,v*255)
+      g = max(0,v * min(255, altitude*10))
+      b = max(0,v * min(255, (altitude-10)*10))
+
+      if moon_brightness and abs(moon_led-i)<3:
+        r = max(0, moon_brightness * min(255, 2*math.degrees(moon_altitude)))
         g = r
-        b = max(0,moon_brightness*255)
-        #np[moon_led] = (r,g,b)
-        #if moon_led > 0: np[moon_led-1] = (r,g,b)
-        #if moon_led < self.num_leds-1: np[moon_led+1] = (r,g,b)
-      else:
-        r = max(0,v*255)
-        g = max(0,v * min(255, altitude*10))
-        b = max(0,v * min(255, (altitude-10)*10))
+        b = max(0, min(255, moon_brightness*255))
 
       # clouds
       if self.clouds_3_hour_interval:
@@ -189,7 +186,7 @@ class Aquarium32:
       self.np.write()
 
   
-  def sim_day(self, start = datetime.datetime(2021,6,14,13,0,0), step_mins = 5):
+  def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 5):
     ts = start.timestamp()
     for i in range(24*60//step_mins):
       self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
