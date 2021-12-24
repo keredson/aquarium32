@@ -13,6 +13,8 @@ if wlan is None:
         time.sleep(60)  # you shall not pass :D
 print("ESP OK", wlan.ifconfig())
 
+import aquarium32_server
+aquarium32_server.start(None)
 
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them
