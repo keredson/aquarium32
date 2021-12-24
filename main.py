@@ -1,4 +1,5 @@
-import time
+import datetime, time
+import machine
 import wifimgr
 
 
@@ -14,6 +15,16 @@ if wlan is None:
 print("ESP OK", wlan.ifconfig())
 
 
-import aquarium32
+try:
+  import pysolar.solar
+  import pysolar.util
+  import suncalc
+  import urequests as requests
+  import aquarium32
+except MemoryError as e:
+  print(e)
+  machine.reset()
 
-aquarium32.Aquarium32().run()
+tank = aquarium32.Aquarium32()
+tank.sim_day()
+tank.run()

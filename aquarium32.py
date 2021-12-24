@@ -1,15 +1,19 @@
 import time
 import math
 import datetime
+import re
 
 try: 
+  import gc
   import machine
   import neopixel
   import ntptime
   import urequests as requests
+  import ujson as json
 except ImportError: 
   # not running on esp32
   import requests
+  import json
 
 import pysolar.solar
 import pysolar.util
@@ -19,6 +23,7 @@ MAX_RADIATION = 1500
 
 
 NTP_CHECK_INTERVAL_SECONDS = 60*60*24*7
+WEATHER_UPDATE_INTERVAL_SECONDS = 60*60*24
 
 DEFAULT_LAT, DEFAULT_LNG = 39.8283, -98.5795
 DEFAULT_LOCATION = 'USA'
@@ -33,6 +38,9 @@ class Aquarium32:
     self.city = None
     self.region = None
     self.country = None
+    
+    self.last_weather_update = 0
+    self.clouds_3_hour_interval = []
 
     self.num_leds = 144
     self.led_length = 1000 # mm
@@ -42,31 +50,67 @@ class Aquarium32:
       # not in micropython / on esp32
       self.np = None
     self.locate()
+    
+    #pir = machine.Pin(0, machine.Pin.IN)
+    #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
+    
+  
+  def handle_interrupt(self, pin):
+    print('handle_interrupt')
+    self.sim_day()
+  
+  
+  def update_weather(self):
+    if self.last_weather_update==0 or time.time() - self.last_weather_update > WEATHER_UPDATE_INTERVAL_SECONDS:
+      try:
+        print('update_weather...')
+        gc.collect()
+        resp = requests.get(url='http://www.7timer.info/bin/civil.php?lon=%f&lat=%f&output=json' % (self.lat, self.lng))
+
+        # manually parse json because of memory limitations
+        self.clouds_3_hour_interval = []
+        b = resp.raw.read(256)
+        while b:
+          while m := re.search(r'["]cloudcover["]\s?:\s?(\d+)',b):
+            self.clouds_3_hour_interval.append((int(m.group(1))-1)/8)
+            b = b[b.index(m.group(0)) + len(m.group(0)):]
+          b = b[-32:] + resp.raw.read(256)
+          if len(b)<=32: break
+        print('self.clouds_3_hour_interval', self.clouds_3_hour_interval)
+        self.last_weather_update = time.time()
+      except Exception as e:
+        print('update_weather', e)
       
       
   def locate(self):
-    resp = requests.get(url='http://www.geoplugin.net/json.gp')
-    data = resp.json()
-    print('geo', data)
-    self.lat = float(data.get('geoplugin_latitude', DEFAULT_LAT))
-    self.lng = float(data.get('geoplugin_longitude', DEFAULT_LNG))
-    self.city = data.get('geoplugin_city')
-    self.region = data.get('geoplugin_regionName')
-    self.country = data.get('geoplugin_countryName')
+    try:
+      resp = requests.get(url='http://www.geoplugin.net/json.gp')
+      data = resp.json()
+      print('geo', data)
+      self.lat = float(data.get('geoplugin_latitude', DEFAULT_LAT))
+      self.lng = float(data.get('geoplugin_longitude', DEFAULT_LNG))
+      self.city = data.get('geoplugin_city')
+      self.region = data.get('geoplugin_regionName')
+      self.country = data.get('geoplugin_countryName')
+    except Exception as e:
+      print('locate', e)
     
   
   def ntp_check(self):
-    if time.time() - self.last_ntp_check > NTP_CHECK_INTERVAL_SECONDS:
+    if self.last_ntp_check==0 or time.time() - self.last_ntp_check > NTP_CHECK_INTERVAL_SECONDS:
+      print('ntp_check...')
       try:
         ntptime.settime()
         self.last_ntp_check = time.time()
       except Exception as e:
-        print(e)
+        print('ntp_check', e)
         
 
   def main(self, now):
     self.ntp_check()
-    print('at', now)
+    self.update_weather()
+    gc.collect()
+    print('at', now, now.timestamp())
     altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
     print('altitude', altitude)
     azimuth = pysolar.solar.get_azimuth(self.lat, self.lng, now) - 90
@@ -90,11 +134,12 @@ class Aquarium32:
         start -= stop - self.num_leds
         stop = self.num_leds
       print('start', start, 'stop', stop)
+      
 
-      brightness = [max(0, min(i+1, stop) - max(i,start)) for i in range(self.num_leds)]    
+      brightness = [max(0, min(i+1, stop) - max(i,start)) for i in range(self.num_leds)]
     else:
-      brightness = [0 for i in range(self.num_leds)]    
-
+      brightness = [0 for i in range(self.num_leds)]
+      
     print('brightness', brightness)
 
     moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
@@ -102,22 +147,47 @@ class Aquarium32:
     moon_led = int(round(moon['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
     moon_led = max(0, min(moon_led, self.num_leds-1))
     print('moon_led', moon_led)
+    
+    np = [(0,0,0) for i in range(self.num_leds)]
+
+    for i, v in enumerate(brightness):
+      r = max(0,v*255)
+      g = max(0,v * min(255, altitude*10))
+      b = max(0,v * min(255, (altitude-10)*10))
+      np[i] = (r,g,b)
+    if moon_brightness:
+      r = max(0,moon_brightness * min(255, math.degrees(moon['altitude'])))
+      g = r #max(0,int(round(moon_brightness * min(255, (math.degrees(moon['altitude'])-10)*10))))
+      b = max(0,moon_brightness*255)
+      np[moon_led] = (r,g,b)
+
+    # clouds
+    if self.clouds_3_hour_interval:
+      cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
+      cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
+      cloud_step = now.timestamp()/10
+      for i in range(self.num_leds):
+        _r, _g, _b = np[i]
+        cloud_wave = (1+math.sin((cloud_step+i)/16))/2
+        cloud_factor = 1 - cloudiness * cloud_wave
+        
+        # cap at 95% reduction
+        cloud_factor = .05 + .95*cloud_factor
+        r = _r*cloud_factor
+        g = _g*cloud_factor
+        b = _b*cloud_factor
+        np[i] = (r,g,b)
+
+    for i in range(self.num_leds):
+      r, g, b = np[i]
+      self.np[i] = int(round(r)), int(round(g)), int(round(b))
+
 
     if self.np:
-      for i, v in enumerate(brightness):
-        r = max(0,int(round(v*255)))
-        g = max(0,int(round(v * min(255, altitude*10))))
-        b = max(0,int(round(v * min(255, (altitude-10)*10))))
-        self.np[i] = (r,g,b)
-      if moon_brightness:
-        r = max(0,int(round(moon_brightness * min(255, math.degrees(moon['altitude'])))))
-        g = r #max(0,int(round(moon_brightness * min(255, (math.degrees(moon['altitude'])-10)*10))))
-        b = max(0,int(round(moon_brightness*255)))
-        self.np[moon_led] = (r,g,b)
       self.np.write()
 
   
-  def sim_day(self, start, step_mins = 10):
+  def sim_day(self, start = datetime.datetime(2021,6,20,13,0,0), step_mins = 1):
     ts = start.timestamp()
     for i in range(24*60//step_mins):
       self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
@@ -126,4 +196,5 @@ class Aquarium32:
   def run(self):
     while True:
       self.main(datetime.datetime.now())
-      time.sleep(60)
+      time.sleep(5)
+      
