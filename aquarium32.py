@@ -122,6 +122,10 @@ class Aquarium32:
     moon = suncalc.getMoonPosition(now, self.lat, self.lng)
     moon.update(suncalc.getMoonIllumination(now))
     print('moon', moon)
+    moon_altitude = moon['altitude']
+    moon_fraction = moon['fraction']
+    moon_azimuth = moon['azimuth']
+    del moon
     
     if radiation > 0:
       sun_center = azimuth / 180 * self.num_leds
@@ -136,58 +140,56 @@ class Aquarium32:
       print('start', start, 'stop', stop)
       
 
-      brightness = [max(0, min(i+1, stop) - max(i,start)) for i in range(self.num_leds)]
+      brightness = (max(0, min(i+1, stop) - max(i,start)) for i in range(self.num_leds))
     else:
-      brightness = [0 for i in range(self.num_leds)]
+      brightness = (0 for i in range(self.num_leds))
       
-    print('brightness', brightness)
 
-    moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
+    moon_brightness = max(0, math.sin(moon_altitude) * moon_fraction)
     print('moon_brightness', moon_brightness)
-    moon_led = int(round(moon['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
+    moon_led = int(round(moon_azimuth / math.pi * self.num_leds + self.num_leds/2))
     moon_led = max(0, min(moon_led, self.num_leds-1))
     print('moon_led', moon_led)
-    
-    np = [(0,0,0) for i in range(self.num_leds)]
+        
+    def f(i, v):
+      if moon_brightness and i==moon_led:
+        r = max(0,moon_brightness * min(255, 2* math.degrees(moon_altitude)))
+        g = r
+        b = max(0,moon_brightness*255)
+        #np[moon_led] = (r,g,b)
+        #if moon_led > 0: np[moon_led-1] = (r,g,b)
+        #if moon_led < self.num_leds-1: np[moon_led+1] = (r,g,b)
+      else:
+        r = max(0,v*255)
+        g = max(0,v * min(255, altitude*10))
+        b = max(0,v * min(255, (altitude-10)*10))
 
-    for i, v in enumerate(brightness):
-      r = max(0,v*255)
-      g = max(0,v * min(255, altitude*10))
-      b = max(0,v * min(255, (altitude-10)*10))
-      np[i] = (r,g,b)
-    if moon_brightness:
-      r = max(0,moon_brightness * min(255, math.degrees(moon['altitude'])))
-      g = r #max(0,int(round(moon_brightness * min(255, (math.degrees(moon['altitude'])-10)*10))))
-      b = max(0,moon_brightness*255)
-      np[moon_led] = (r,g,b)
-
-    # clouds
-    if self.clouds_3_hour_interval:
-      cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
-      cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
-      cloud_step = now.timestamp()/10
-      for i in range(self.num_leds):
-        _r, _g, _b = np[i]
+      # clouds
+      if self.clouds_3_hour_interval:
+        cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
+        cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
+        cloud_step = now.timestamp()/10
         cloud_wave = (1+math.sin((cloud_step+i)/16))/2
         cloud_factor = 1 - cloudiness * cloud_wave
         
         # cap at 95% reduction
         cloud_factor = .05 + .95*cloud_factor
-        r = _r*cloud_factor
-        g = _g*cloud_factor
-        b = _b*cloud_factor
-        np[i] = (r,g,b)
+        r = r*cloud_factor
+        g = g*cloud_factor
+        b = b*cloud_factor
 
-    for i in range(self.num_leds):
-      r, g, b = np[i]
-      self.np[i] = int(round(r)), int(round(g)), int(round(b))
-
+      return int(round(r)), int(round(g)), int(round(b))
+    
+    np = (f(i, v) for i, v in enumerate(brightness))
 
     if self.np:
+      for i, color in enumerate(np):
+        r, g, b = color
+        self.np[i] = color
       self.np.write()
 
   
-  def sim_day(self, start = datetime.datetime(2021,6,20,13,0,0), step_mins = 1):
+  def sim_day(self, start = datetime.datetime(2021,6,14,13,0,0), step_mins = 5):
     ts = start.timestamp()
     for i in range(24*60//step_mins):
       self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
