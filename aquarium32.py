@@ -19,6 +19,10 @@ import pysolar.solar
 import pysolar.util
 import suncalc
 
+
+import aquarium32_server
+
+
 MAX_RADIATION = 1500
 
 
@@ -49,6 +53,9 @@ class Aquarium32:
     except NameError:
       # not in micropython / on esp32
       self.np = None
+      
+    aquarium32_server.start(self)
+    
     self.locate()
     
     #pir = machine.Pin(0, machine.Pin.IN)
