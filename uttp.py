@@ -11,6 +11,7 @@ class Request:
   def __init__(self, app, f):
     request_line = f.readline().decode()
     self.app = app
+    if not request_line: raise Exception('empty request')
     self.method, path, self.proto = request_line.split()
     path = path.split('?', 1)
     self.path = path[0]
@@ -33,6 +34,7 @@ class Response:
     self.sent_status = False
     self.sent_content_type = False
     self.started_body = False
+    self.handled_by = None
     
   def _pre_write(self):
     if not self.sent_status:
@@ -62,9 +64,9 @@ class Response:
       self.send_header(header(k, v))
 
   def start(self, status):
-    status_line = 'HTTP/1.0 %i %s\r\n' % (status.code, status.reason)
+    status_line = '↳ HTTP/1.1 %i %s\r\n' % (status.code, status.reason)
     self.f.write(status_line.encode())
-    print(status_line.strip())
+    print(status_line.strip(), '<=', self.handled_by.original_pattern if self.handled_by else '(not handled)')
     self.sent_status = True
   
 
@@ -72,8 +74,9 @@ class Response:
 class Route:
 
   def __init__(self, f, method, pattern):
+    self.original_pattern = pattern
     self.f = f
-    self.method = method    
+    self.method = method
     if pattern.__class__.__name__=='ure':
       self.pattern = pattern
     else:
@@ -147,10 +150,8 @@ class App:
         print('failed:', e)
         sys.print_exception(e)
       finally:
-        print('closing socket...')
         f.close()
         cl.close()
-        print('closed')
       
   def run_daemon(self, host='0.0.0.0', port=80):
     import _thread  
@@ -164,6 +165,7 @@ class App:
     for route in _chain(self._get_routes(request.method), self._get_routes('*')):
       match = route.pattern.match(request.path)
       if match:
+        response.handled_by = route
         route.handle(match)
         break
     else:
@@ -173,15 +175,20 @@ class App:
     
 
 class status:
-  def __init__(self, code=200, reason='OK'):
+  def __init__(self, code=200, reason=None):
     self.code = code
-    self.reason = reason
+    self.reason = reason or DEFAULT_CODE_REASONS.get(code, 'Other')
 
 class header:
   def __init__(self, k, v):
     self.k = k
     self.v = v
     
+    
+DEFAULT_CODE_REASONS = {
+  200: 'OK',
+  404: 'Not Found',
+}
 
 DEFAULT = App()
 get = DEFAULT.get

@@ -20,30 +20,18 @@
 
 
     <script src="/__uttpreact__"></script>
-    <script src="/index.jsx" type="text/jsx"></script>
+    <script src="/static/Aquarium32.jsx" type="text/jsx"></script>
+    <script src="/static/Home.jsx" type="text/jsx"></script>
     
     <script>
       function start() {
-        console.log('start')
         ReactDOM.render(
-          React.createElement(Welcome),
+          React.createElement(Aquarium32),
           document.getElementById('__body__')
         )
       }
     </script>
 
-    <style>
-      body {
-          height: 100%;
-          margin: 0;
-          padding: 0;
-          background-color: #FFCC00;
-      }
-      html {
-          height: 100%;
-      }
-    </style>  
-    
   </head>
   <body onload="__uttpreact_onload__(start)" style="margin:0">
     <div id='__body__'>

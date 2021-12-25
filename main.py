@@ -18,9 +18,9 @@ if ON_ESP32:
           time.sleep(60)  # you shall not pass :D
   print("ESP OK", wlan.ifconfig())
 
-import aquarium32_server, uttp
-aquarium32_server.setup(None)
-uttp.run(port=80 if ON_ESP32 else 8080)
+#import aquarium32_server, uttp
+#aquarium32_server.setup(None)
+#uttp.run(port=80 if ON_ESP32 else 8080)
 
 
 try:
@@ -32,6 +32,7 @@ try:
   import urequests as requests
   import uttp
   import aquarium32_server
+  import util
   gc.collect()
   import aquarium32
 except MemoryError as e:
@@ -43,5 +44,5 @@ except MemoryError as e:
 
 tank = aquarium32.Aquarium32()
 #tank.sim_day()
-#tank.run()
+tank.run()
 

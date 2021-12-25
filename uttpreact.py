@@ -22,8 +22,9 @@ def init(jsx_path='static'):
         if m:
           print('found', m.group(1), 'in', full_fn)
           CLASS_MAP[m.group(1)] = fn
+  print('CLASS_MAP', CLASS_MAP)
 
-init()
+#init()
 
 @uttp.get(r'/__uttpreact__')
 def __uttpreact__():

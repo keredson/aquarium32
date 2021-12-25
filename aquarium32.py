@@ -8,18 +8,16 @@ try:
   import gc
   import machine
   import neopixel
-  import ntptime
-  import urequests as requests
   import ujson as json
 except ImportError: 
   # not running on esp32
-  import requests
   import json
 
 import pysolar.solar
 import pysolar.util
 import suncalc
 import uttp
+import util
 
 
 import aquarium32_server
@@ -28,10 +26,6 @@ import aquarium32_server
 MAX_RADIATION = 1500
 
 
-NTP_CHECK_INTERVAL_SECONDS = 60*60*24*7
-WEATHER_UPDATE_INTERVAL_SECONDS = 60*60*24
-
-DEFAULT_LAT, DEFAULT_LNG = 39.8283, -98.5795
 DEFAULT_LOCATION = 'USA'
 
 class Aquarium32:
@@ -39,17 +33,24 @@ class Aquarium32:
   def __init__(self):
     print('Aquarium32')
     self.last_ntp_check = 0
+    
+    self.settings = {
+      'num_leds': 144*2,
+    }
 
-    self.lat, self.lng = DEFAULT_LAT, DEFAULT_LNG
+    self.lat, self.lng = util.DEFAULT_LAT, util.DEFAULT_LNG
     self.city = None
     self.region = None
     self.country = None
     
+    self.sun = None
+    self.moon = None
+    self.when = None
+    
     self.last_weather_update = 0
     self.clouds_3_hour_interval = []
 
-    self.num_leds = 144 * 2
-    self.led_length = 1000 # mm
+    #self.num_leds = 144 * 2
     try:
       self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
     except NameError:
@@ -66,6 +67,10 @@ class Aquarium32:
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
     
+  @property
+  def num_leds(self):
+    return self.settings.get('num_leds', 144)
+    
   def clear(self):
     if self.np:
       for i in range(self.num_leds):
@@ -75,59 +80,16 @@ class Aquarium32:
   def handle_interrupt(self, pin):
     print('handle_interrupt')
     self.sim_day()
-  
-  
-  def update_weather(self):
-    if self.last_weather_update==0 or time.time() - self.last_weather_update > WEATHER_UPDATE_INTERVAL_SECONDS:
-      try:
-        print('update_weather...')
-        gc.collect()
-        resp = requests.get(url='http://www.7timer.info/bin/civil.php?lon=%f&lat=%f&output=json' % (self.lat, self.lng))
-
-        # manually parse json because of memory limitations
-        self.clouds_3_hour_interval = []
-        b = resp.raw.read(256)
-        while b:
-          while m := re.search(r'["]cloudcover["]\s?:\s?(\d+)',b):
-            self.clouds_3_hour_interval.append((int(m.group(1))-1)/8)
-            b = b[b.index(m.group(0)) + len(m.group(0)):]
-          b = b[-32:] + resp.raw.read(256)
-          if len(b)<=32: break
-        print('self.clouds_3_hour_interval', self.clouds_3_hour_interval)
-        self.last_weather_update = time.time()
-      except Exception as e:
-        print('update_weather', e)
-      
-      
-  def locate(self):
-    try:
-      resp = requests.get(url='http://www.geoplugin.net/json.gp')
-      data = resp.json()
-      print('geo', data)
-      self.lat = float(data.get('geoplugin_latitude', DEFAULT_LAT))
-      self.lng = float(data.get('geoplugin_longitude', DEFAULT_LNG))
-      self.city = data.get('geoplugin_city')
-      self.region = data.get('geoplugin_regionName')
-      self.country = data.get('geoplugin_countryName')
-    except Exception as e:
-      print('locate', e)
     
-  
-  def ntp_check(self):
-    if self.last_ntp_check==0 or time.time() - self.last_ntp_check > NTP_CHECK_INTERVAL_SECONDS:
-      print('ntp_check...')
-      try:
-        ntptime.settime()
-        self.last_ntp_check = time.time()
-      except Exception as e:
-        print('ntp_check', e)
-        
+  update_weather = util.update_weather
+  ntp_check = util.ntp_check
+  locate = util.locate
+         
 
   def main(self, now):
     self.ntp_check()
     self.update_weather()
     gc.collect()
-    print('at', now, now.timestamp(), gc.mem_free())
     altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
     #print('altitude', altitude)
     azimuth = pysolar.solar.get_azimuth(self.lat, self.lng, now) - 90
@@ -138,7 +100,19 @@ class Aquarium32:
     #print('leds', leds)
     moon = suncalc.getMoonPosition(now, self.lat, self.lng)
     moon.update(suncalc.getMoonIllumination(now))
-    #print('moon', moon)
+    self.when = now
+    self.sun = {
+      'altitude':altitude,
+      'azimuth':azimuth,
+      'radiation':radiation,
+    }
+    self.moon = {
+      'altitude':moon['altitude'],
+      'azimuth':moon['azimuth'],
+      'fraction':moon['fraction'],
+    }
+    print('at', now, now.timestamp(), gc.mem_free(), 'sun', self.sun, 'moon', self.moon)
+    
     moon_altitude = moon['altitude']
     moon_fraction = moon['fraction']
     moon_azimuth = moon['azimuth']
