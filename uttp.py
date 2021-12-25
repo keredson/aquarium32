@@ -4,6 +4,8 @@ import time
 import sys
 import io
 
+import json
+
 class Request:
 
   def __init__(self, app, f):
@@ -31,40 +33,39 @@ class Response:
     self.sent_status = False
     self.sent_content_type = False
     self.started_body = False
-          
-  def write(self, d):
+    
+  def _pre_write(self):
     if not self.sent_status:
       self.start(status(200))
     if not self.sent_content_type:
-      self.send_header('Content-Type', 'text/html; charset=utf-8')
+      self.send_header(header('Content-Type', 'text/html; charset=utf-8'))
     if not self.started_body:
-      self.f.write('\r\n')
+      self.f.write(b'\r\n')
       self.started_body = True
+          
+  def write(self, d):
+    self._pre_write()
+    if isinstance(d, str): d = d.encode()
     self.f.write(d)
    
-  def send_header(self, k, v):
-    if k=='Content-Type': self.sent_content_type = True
-    self.f.write(k)
-    self.f.write(': ')
-    self.f.write(v)
-    self.f.write('\r\n')
+  def send_header(self, h):
+    if not self.sent_status:
+      self.start(status(200))
+    if h.k=='Content-Type': self.sent_content_type = True
+    self.f.write(h.k.encode())
+    self.f.write(': '.encode())
+    self.f.write(h.v.encode())
+    self.f.write(b'\r\n')
 
   def send_headers(self, headers):
     for k, v in headers.items():
-      self.send_header(k, v)
+      self.send_header(header(k, v))
 
   def start(self, status):
     status_line = 'HTTP/1.0 %i %s\r\n' % (status.code, status.reason)
-    self.f.write(status_line)
+    self.f.write(status_line.encode())
     print(status_line.strip())
     self.sent_status = True
-    return
-    for k, v in headers.items():
-      self.f.write(k)
-      self.f.write(': ')
-      self.f.write(v)
-      self.f.write('\r\n')
-    self.f.write('\r\n')
   
 
 
@@ -89,9 +90,15 @@ class Route:
     for ret in self.f(*args):
       if isinstance(ret, status):
         response.start(ret)
+      elif isinstance(ret, header):
+        response.send_header(ret)
       elif isinstance(ret, str):
         response.write(ret)
-      elif repr(ret)=='<io.TextIOWrapper>':
+      elif isinstance(ret, dict):
+        response.send_header(header('Content-Type', 'application/json'))
+        response._pre_write()
+        json.dump(ret, response.f)
+      elif 'io.TextIOWrapper' in repr(ret):
         while b:=ret.read(256):
           response.write(b)
       else: raise Exception('unknown response type:', ret)
@@ -140,8 +147,10 @@ class App:
         print('failed:', e)
         sys.print_exception(e)
       finally:
-        #f.close()
+        print('closing socket...')
+        f.close()
         cl.close()
+        print('closed')
       
   def run_daemon(self, host='0.0.0.0', port=80):
     import _thread  
@@ -158,7 +167,7 @@ class App:
         route.handle(match)
         break
     else:
-      response.start(status=404)
+      response.start(status=status(404))
     request = None
     response = None
     
@@ -167,6 +176,11 @@ class status:
   def __init__(self, code=200, reason='OK'):
     self.code = code
     self.reason = reason
+
+class header:
+  def __init__(self, k, v):
+    self.k = k
+    self.v = v
     
 
 DEFAULT = App()

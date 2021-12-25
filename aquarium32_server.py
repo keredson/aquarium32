@@ -1,7 +1,8 @@
 import uttp
+import uttpreact
 
 
-def start(tank):
+def setup(tank):
   
   @uttp.get(r'/hello')
   def hello():
@@ -15,9 +16,16 @@ def start(tank):
 
   @uttp.get(r'/<fn>')
   def static_file(fn):
-    yield from uttp.file('static/'+fn)
-    
+    fn = 'static/'+fn
+    try:
+      with open(fn) as f:
+        if fn.endswith('.jsx'):
+          yield uttp.header('Content-Type', 'application/javascript')
+        yield f
+    except OSError:
+      yield uttp.status(404)
+
   
   #uttp.run_daemon()
-  uttp.run()
+  #uttp.run()
 

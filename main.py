@@ -1,27 +1,38 @@
-import datetime, sys, time, upip
-import machine
+import datetime, sys, time, gc
+
+try: 
+  import machine
+  ON_ESP32 = True
+except ModuleNotFoundError:
+  ON_ESP32 = False
 
 
-import wifimgr
 
+if ON_ESP32:
+  import wifimgr
+  print('getting connection')
+  wlan = wifimgr.get_connection()
+  if wlan is None:
+      print("Could not initialize the network connection.")
+      while True:
+          time.sleep(60)  # you shall not pass :D
+  print("ESP OK", wlan.ifconfig())
 
-print('getting connection')
-wlan = wifimgr.get_connection()
-if wlan is None:
-    print("Could not initialize the network connection.")
-    while True:
-        time.sleep(60)  # you shall not pass :D
-print("ESP OK", wlan.ifconfig())
+import aquarium32_server, uttp
+aquarium32_server.setup(None)
+uttp.run(port=80 if ON_ESP32 else 8080)
 
-import aquarium32_server
-aquarium32_server.start(None)
 
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them
+  import machine
   import pysolar.solar
   import pysolar.util
   import suncalc
   import urequests as requests
+  import uttp
+  import aquarium32_server
+  gc.collect()
   import aquarium32
 except MemoryError as e:
   print(e)

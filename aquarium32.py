@@ -2,6 +2,7 @@ import time
 import math
 import datetime
 import re
+import sys
 
 try: 
   import gc
@@ -18,6 +19,7 @@ except ImportError:
 import pysolar.solar
 import pysolar.util
 import suncalc
+import uttp
 
 
 import aquarium32_server
@@ -46,21 +48,29 @@ class Aquarium32:
     self.last_weather_update = 0
     self.clouds_3_hour_interval = []
 
-    self.num_leds = 144
+    self.num_leds = 144 * 2
     self.led_length = 1000 # mm
     try:
       self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
     except NameError:
       # not in micropython / on esp32
       self.np = None
+    
+    self.clear()
       
-    aquarium32_server.start(self)
+    aquarium32_server.setup(self)
+    uttp.run_daemon()
     
     self.locate()
     
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
     
+  def clear(self):
+    if self.np:
+      for i in range(self.num_leds):
+        self.np[i] = (0,0,0)
+      self.np.write()
   
   def handle_interrupt(self, pin):
     print('handle_interrupt')
@@ -117,18 +127,18 @@ class Aquarium32:
     self.ntp_check()
     self.update_weather()
     gc.collect()
-    print('at', now, now.timestamp())
+    print('at', now, now.timestamp(), gc.mem_free())
     altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
-    print('altitude', altitude)
+    #print('altitude', altitude)
     azimuth = pysolar.solar.get_azimuth(self.lat, self.lng, now) - 90
-    print('azimuth', azimuth)
+    #print('azimuth', azimuth)
     radiation = pysolar.util.diffuse_underclear(self.lat, self.lng, now)
-    print('radiation', radiation)
+    #print('radiation', radiation)
     leds = radiation / MAX_RADIATION * self.num_leds
-    print('leds', leds)
+    #print('leds', leds)
     moon = suncalc.getMoonPosition(now, self.lat, self.lng)
     moon.update(suncalc.getMoonIllumination(now))
-    print('moon', moon)
+    #print('moon', moon)
     moon_altitude = moon['altitude']
     moon_fraction = moon['fraction']
     moon_azimuth = moon['azimuth']
@@ -196,7 +206,10 @@ class Aquarium32:
   def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 5):
     ts = start.timestamp()
     for i in range(24*60//step_mins):
-      self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
+      try:
+        self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
+      except MemoryError as e:
+        sys.print_exception(e)
     
     
   def run(self):
