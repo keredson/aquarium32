@@ -269,8 +269,8 @@ def get_mean_sidereal_time(jd):
 
 def get_nutation(jce):
     abcd = constants.nutation_coefficients
-    nutation_long = []
-    nutation_oblique = []
+    nutation_long = 0
+    nutation_oblique = 0
     p = constants.get_aberration_coeffs()
     x = list \
       (
@@ -290,11 +290,11 @@ def get_nutation(jce):
         for j in range(len(x)):
             sigmaxy += x[j] * y[i][j]
         #end for
-        nutation_long.append((abcd[i][0] + (abcd[i][1] * jce)) * math.sin(math.radians(sigmaxy)))
-        nutation_oblique.append((abcd[i][2] + (abcd[i][3] * jce)) * math.cos(math.radians(sigmaxy)))
+        nutation_long += (abcd[i][0] + (abcd[i][1] * jce)) * math.sin(math.radians(sigmaxy))
+        nutation_oblique += (abcd[i][2] + (abcd[i][3] * jce)) * math.cos(math.radians(sigmaxy))
 
     # 36000000 scales from 0.0001 arcseconds to degrees
-    nutation = {'longitude' : sum(nutation_long)/36000000.0, 'obliquity' : sum(nutation_oblique)/36000000.0}
+    nutation = {'longitude' : nutation_long/36000000.0, 'obliquity' : nutation_oblique/36000000.0}
 
     return nutation
 #end get_nutation
