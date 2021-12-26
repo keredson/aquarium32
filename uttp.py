@@ -100,7 +100,7 @@ class Route:
       elif isinstance(ret, dict):
         response.send_header(header('Content-Type', 'application/json'))
         response._pre_write()
-        json.dump(ret, response.f)
+        response.write(json.dumps(ret))
       elif 'io.TextIOWrapper' in repr(ret):
         while b:=ret.read(256):
           response.write(b)

@@ -1,8 +1,10 @@
 
 const {
   Button,
+  LinearProgress,
   Paper, 
   TableContainer, Table, TableHead, TableRow, TableCell, TableBody, 
+  Typography,
 } = window.MaterialUI;
 
 class Home extends React.Component {
@@ -11,6 +13,7 @@ class Home extends React.Component {
     super(props)
     this.state = {
       tank: null,
+      loading_tank: false,
     }
   }
   
@@ -21,10 +24,10 @@ class Home extends React.Component {
   
   update() {
     console.log('update')
-    this.setState({tank:null})
+    this.setState({loading_tank:true})
     fetch('/status.json')
     .then(response => response.json())
-    .then(data => this.setState({tank:data}));
+    .then(data => this.setState({tank:data, loading_tank:false}));
   }
   
   render_dict(d) {
@@ -44,6 +47,17 @@ class Home extends React.Component {
     
     return (
       <div>
+
+        <Typography variant="h4">
+          Status
+          {this.state.loading_tank ? (
+            <LinearProgress />
+          ) : (
+            <IconButton onClick={() => this.update()}>
+              <Icon>refresh</Icon>
+            </IconButton>
+          )}
+        </Typography>
 
         <TableContainer component={Paper}>
           <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -91,13 +105,6 @@ class Home extends React.Component {
         </TableContainer>
 
         <p>
-          <Button
-            variantx="contained"
-            startIcon={<Icon>refresh</Icon>}
-            onClick={() => this.update()}
-          >
-            Refresh
-          </Button>
         </p>
       </div>
     )

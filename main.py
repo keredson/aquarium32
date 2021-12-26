@@ -7,7 +7,6 @@ except ModuleNotFoundError:
   ON_ESP32 = False
 
 
-
 if ON_ESP32:
   import wifimgr
   print('getting connection')
@@ -25,7 +24,6 @@ if ON_ESP32:
 
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them
-  import machine
   import pysolar.solar
   import pysolar.util
   import suncalc
