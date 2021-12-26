@@ -1,4 +1,4 @@
-import usocket
+import socket
 
 
 class Response:
@@ -52,10 +52,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
         host, port = host.split(":", 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+    ai = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
     ai = ai[0]
 
-    s = usocket.socket(ai[0], ai[1], ai[2])
+    s = socket.socket(ai[0], ai[1], ai[2])
     try:
         s.connect(ai[-1])
         if proto == "https:":

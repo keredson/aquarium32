@@ -1,6 +1,9 @@
 import gc, re, sys
-import urequests as requests
-import ntptime
+try:
+  import ntptime
+  ON_ESP32 = True
+except ModuleNotFoundError: 
+  ON_ESP32 = False
 import time
 import urequests as requests
 
@@ -32,6 +35,8 @@ def update_weather(self):
       print('update_weather', e)
 
 def ntp_check(self):
+  if not ON_ESP32:
+    return
   if self.last_ntp_check==0 or time.time() - self.last_ntp_check > NTP_CHECK_INTERVAL_SECONDS:
     print('ntp_check...')
     try:
@@ -41,6 +46,8 @@ def ntp_check(self):
       print('ntp_check', e)
       
 def locate(self):
+  if not ON_ESP32:
+    return
   try:
     gc.collect()
     resp = requests.get(url='http://www.geoplugin.net/json.gp')

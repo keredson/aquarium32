@@ -1,10 +1,17 @@
-import datetime, sys, time, gc
+import sys, time, gc
+
 
 try: 
   import machine
   ON_ESP32 = True
 except ModuleNotFoundError:
   ON_ESP32 = False
+
+
+if ON_ESP32:
+  import _datetime
+  sys.modules['datetime'] = _datetime
+  import datetime
 
 
 if ON_ESP32:
@@ -17,17 +24,13 @@ if ON_ESP32:
           time.sleep(60)  # you shall not pass :D
   print("ESP OK", wlan.ifconfig())
 
-#import aquarium32_server, uttp
-#aquarium32_server.setup(None)
-#uttp.run(port=80 if ON_ESP32 else 8080)
-
 
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them
   import pysolar.solar
   import pysolar.util
   import suncalc
-  import urequests as requests
+  import fix_for_urequests
   import uttp
   import util
   gc.collect()
@@ -39,9 +42,10 @@ except MemoryError as e:
   # try again
   machine.reset()
 
+
 tank = aquarium32.Aquarium32()
 import aquarium32_server
 aquarium32_server.setup(tank)
-uttp.run_daemon()
+uttp.run_daemon(port=80 if ON_ESP32 else 8080)
 tank.main()
 

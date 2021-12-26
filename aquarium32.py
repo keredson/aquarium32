@@ -9,9 +9,10 @@ try:
   import machine
   import neopixel
   import ujson as json
+  ON_ESP32 = True
 except ImportError: 
-  # not running on esp32
   import json
+  ON_ESP32 = False
 
 import pysolar.solar
 import pysolar.util
@@ -108,7 +109,10 @@ class Aquarium32:
       'azimuth':moon['azimuth'],
       'fraction':moon['fraction'],
     }
-    print('at', now, now.timestamp(), gc.mem_free(), 'sun', self.sun, 'moon', self.moon)
+    print(
+      'at', now, now.timestamp(), gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
+      'sun', self.sun, 'moon', self.moon
+    )
     
     moon_altitude = moon['altitude']
     moon_fraction = moon['fraction']
