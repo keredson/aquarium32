@@ -15,14 +15,25 @@ class Request:
     self.method, path, self.proto = request_line.split()
     path = path.split('?', 1)
     self.path = path[0]
-    qs = path[1] if len(path)>1 else None
-    self.params = dict(parse_qs(qs))
+
+    if self.method=='GET':
+      qs = path[1] if len(path)>1 else None
+      self.params = dict(parse_qs(qs))
 
     self.headers = {}
     while header_line := f.readline():
       if header_line == b'\r\n': break
       k, v = header_line.decode().strip().split(': ')
       self.headers[k] = v
+
+    if self.method=='POST':
+      length = int(self.headers['Content-Length'])
+      post_data = f.read(length)
+      print('post_data', post_data)
+      if self.headers['Content-Type'] == 'application/json':
+        self.params = json.loads(post_data)
+      else:
+        self.params = dict(parse_qs(post_data))
 
     print('%s:'%self.app.name, self.proto, self.method, self.path, self.params)
 
@@ -116,6 +127,9 @@ class App:
   def get(self, pattern):
     return self.route(pattern, method='GET')
     
+  def post(self, pattern):
+    return self.route(pattern, method='POST')
+    
   def _get_routes(self, method):
     routes = self.routes.get(method)
     if routes is None:
@@ -192,6 +206,7 @@ DEFAULT_CODE_REASONS = {
 
 DEFAULT = App()
 get = DEFAULT.get
+post = DEFAULT.post
 run = DEFAULT.run
 run_daemon = DEFAULT.run_daemon
 
