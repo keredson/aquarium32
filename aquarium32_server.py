@@ -28,6 +28,15 @@ def setup(tank):
     except OSError:
       yield uttp.status(404)
 
+  @uttp.post('/set_state')
+  def set_state():
+    state = uttp.request.params.get('state')
+    if state:
+      tank.state = state
+      yield 'ok'
+    else:
+      yield uttp.status(400)
+
   @uttp.get('/status.json')
   def status():
     yield {
@@ -42,6 +51,7 @@ def setup(tank):
       'sun': tank.sun,
       'moon': tank.moon,
       'when': str(tank.when),
+      'state': tank.state,
     }
   
   #uttp.run_daemon()

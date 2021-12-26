@@ -49,6 +49,7 @@ class Aquarium32:
     
     self.last_weather_update = 0
     self.clouds_3_hour_interval = []
+    self.state = 'realtime'
 
     #self.num_leds = 144 * 2
     try:
@@ -58,11 +59,7 @@ class Aquarium32:
       self.np = None
     
     self.clear()
-      
-    aquarium32_server.setup(self)
-    uttp.run_daemon()
-    
-    self.locate()
+          
     
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
@@ -86,7 +83,7 @@ class Aquarium32:
   locate = util.locate
          
 
-  def main(self, now):
+  def update_leds(self, now):
     self.ntp_check()
     self.update_weather()
     gc.collect()
@@ -178,16 +175,45 @@ class Aquarium32:
 
   
   def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 5):
+    self.state = 'sim_day'
     ts = start.timestamp()
     for i in range(24*60//step_mins):
+      if self.state != 'sim_day': break
       try:
-        self.main(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
+        self.update_leds(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
       except MemoryError as e:
         sys.print_exception(e)
-    
-    
-  def run(self):
+  
+  
+  def main(self):
+    self.locate()
     while True:
-      self.main(datetime.datetime.now())
+      f = getattr(self, self.state)
+      if f: f()
+      self.clear()
+      time.sleep(1)
+    
+  def realtime(self):
+    self.state = 'realtime'
+    while True:
+      if self.state != 'realtime': break
+      self.update_leds(datetime.datetime.now())
       time.sleep(5)
+
+  def off(self):
+    self.state = 'off'
+    self.clear()
+    while True:
+      if self.state != 'off': break
+      time.sleep(1)
+
+  def full(self):
+    self.state = 'full'
+    if self.np:
+      for i in range(self.num_leds):
+        self.np[i] = (255,255,255)
+      self.np.write()
+    while True:
+      if self.state != 'full': break
+      time.sleep(1)
       

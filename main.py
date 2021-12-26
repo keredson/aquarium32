@@ -29,7 +29,6 @@ try:
   import suncalc
   import urequests as requests
   import uttp
-  import aquarium32_server
   import util
   gc.collect()
   import aquarium32
@@ -41,6 +40,8 @@ except MemoryError as e:
   machine.reset()
 
 tank = aquarium32.Aquarium32()
-#tank.sim_day()
-tank.run()
+import aquarium32_server
+aquarium32_server.setup(tank)
+uttp.run_daemon()
+tank.main()
 
