@@ -23,7 +23,8 @@ import aquarium32_server
 MAX_RADIATION = 1500
 
 
-Settings = collections.namedtuple('Settings', 'num_leds, lat, lng', defaults=(None,None,None,))
+Settings = collections.namedtuple('Settings', 'num_leds, lat, lng, sun_color', defaults=(None,None,None,None))
+Color = collections.namedtuple('Color', 'r g b')
 
 class Aquarium32:
 
@@ -39,6 +40,7 @@ class Aquarium32:
     self.country = None
     
     self.sun = None
+    self.sun_color = Color(255,255,255)
     self.moon = None
     self.when = None
     
@@ -63,7 +65,13 @@ class Aquarium32:
     try:
       with open('aquarium32_settings.json') as f:
         self.settings = Settings(**json.load(f))
+        print('loaded', self.settings)
         self.lat, self.lng = self.settings.lat, self.settings.lng
+        sun_color = self.settings.sun_color
+        if sun_color:
+          sun_color = sun_color.lstrip('#')
+          if len(sun_color)==6:
+            self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
     except FileNotFoundError as e:
       self.settings = Settings()
     except Exception as e:
@@ -150,9 +158,9 @@ class Aquarium32:
     print('moon_led', moon_led)
         
     def f(i, v):
-      r = max(0,v*255)
-      g = max(0,v * min(255, altitude*10))
-      b = max(0,v * min(255, (altitude-10)*10))
+      r = max(0,v*self.sun_color.r)
+      g = max(0,v * min(self.sun_color.g, altitude*10))
+      b = max(0,v * min(self.sun_color.b, (altitude-10)*10))
 
       if moon_brightness and abs(moon_led-i)<3:
         r = max(0, moon_brightness * min(255, 2*math.degrees(moon_altitude)))

@@ -84,11 +84,7 @@ class Settings extends React.Component {
           * Required
         </Typography>
 
-        <Typography variant="body1">
-          LED strips typically have either 30 or 144 LEDs per meter.  Waterproof recommended (<a href='https://www.amazon.com/gp/product/B01CDTE83U' target="_blank">example</a>).
-        </Typography>
-
-        <Typography variant="body1">
+        <Paper style={{padding:'1em'}}>
           <TextField
             label={(<span style={{backgroundColor:this.state.num_leds===this.state._orig_settings?.num_leds ? '' : '#FFFF99'}}>Number of LEDs</span>)}
             type="number"
@@ -96,8 +92,22 @@ class Settings extends React.Component {
             value={this.state.num_leds}
             defaultValue='1'
             onChange={(e => this.setState({num_leds:parseInt(e.target.value)}))}
+            helperText="LED strips typically have either 30 or 144 LEDs per meter.  Waterproof recommended."
+            InputLabelProps={{ shrink: true }}
+            placeholder='144'
+            style={{marginBottom:'1em'}}
           />
-        </Typography>
+
+          <TextField
+            label={(<span style={{backgroundColor:this.state.sun_color===this.state._orig_settings?.sun_color ? '' : '#FFFF99'}}>Sun Color</span>)}
+            value={this.state.sun_color}
+            onChange={(e => this.setState({sun_color:e.target.value}))}
+            helperText="Typically #FFFFFF (default) or #FFFFDD (more yellow)."
+            InputLabelProps={{ shrink: true }}
+            placeholder='#FFFFFF'
+          />
+
+        </Paper>
 
         <Typography variant="body1">
           <br/>
