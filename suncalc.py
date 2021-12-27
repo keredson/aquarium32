@@ -108,7 +108,6 @@ def moonCoords(d):
     )
 
 def getMoonIllumination(date):
-    """Gets illumination properties of the moon for the given time."""
     d = toDays(date)
     s = sunCoords(d)
     m = moonCoords(d)
@@ -125,48 +124,8 @@ def getMoonIllumination(date):
         angle= angle
     )
 
-def getSunrise(date, lat, lng):
-    ret = getTimes(date, lat, lng)
-    return ret["sunrise"]
-
-def getTimes(date, lat, lng, height=0):
-    """Gets sun rise/set properties for the given time, location and height."""
-    lw = rad * -lng
-    phi = rad * lat
-
-    dh = observerAngle(height)
-
-    d = toDays(date)
-    n = julianCycle(d, lw)
-    ds = approxTransit(0, lw, n)
-
-    M = solarMeanAnomaly(ds)
-    L = eclipticLongitude(M)
-    dec = declination(L, 0)
-
-    Jnoon = solarTransitJ(ds, M, L)
-
-    result = dict(
-        solarNoon=fromJulian(Jnoon), #.strftime('%Y-%m-%d %H:%M:%S'),
-        nadir=fromJulian(Jnoon - 0.5) #.strftime('%Y-%m-%d %H:%M:%S')
-    )
-
-    for i in range(0, len(times)):
-        time = times[i]
-        h0 = (time[0] + dh) * rad
-
-        Jset = getSetJ(h0, lw, phi, dec, n, M, L)
-        Jrise = Jnoon - (Jset - Jnoon)
-        result[time[1]] = fromJulian(Jrise)#.strftime('%Y-%m-%d %H:%M:%S')
-        result[time[2]] = fromJulian(Jset)#.strftime('%Y-%m-%d %H:%M:%S')
-
-    return result
-
-def hoursLater(date, h):
-    return date + timedelta(hours=h)
 
 def getMoonTimes(date, lat, lng):
-    """Gets moon rise/set properties for the given time and location."""
 
     t = date.replace(hour=0,minute=0,second=0)
 
@@ -229,7 +188,6 @@ def getMoonTimes(date, lat, lng):
     return result
 
 def getMoonPosition(date, lat, lng):
-    """Gets positional attributes of the moon for the given time and location.""" 
 
     lw  = rad * -lng
     phi = rad * lat
@@ -248,19 +206,5 @@ def getMoonPosition(date, lat, lng):
         altitude=h,
         distance=c["dist"],
         parallacticAngle=pa
-    )
-
-def getPosition(date, lat, lng):
-    """Returns positional attributes of the sun for the given time and location."""
-    lw  = rad * -lng
-    phi = rad * lat
-    d   = toDays(date)
-
-    c  = sunCoords(d)
-    H  = siderealTime(d, lw) - c["ra"]
-#    print("d", d, "c",c,"H",H,"phi", phi, 'lw', lw)
-    return dict(
-        azimuth=azimuth(H, phi, c["dec"]),
-        altitude=altitude(H, phi, c["dec"])
     )
 

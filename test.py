@@ -4,10 +4,6 @@ from datetime import datetime
 import suncalc
 from aquarium32 import Aquarium32
 
-noon = suncalc.getTimes(datetime(2021,6,21), 37.7749, -122.4194)['solarNoon']
-dawn = suncalc.getTimes(datetime(2021,6,21), 37.7749, -122.4194)['dawn']
-sunrise = suncalc.getTimes(datetime(2021,6,21), 37.7749, -122.4194)['sunrise']
-sunset = suncalc.getTimes(datetime(2021,6,21), 37.7749, -122.4194)['sunset']
 
 
 class TestSunCalc(unittest.TestCase):
