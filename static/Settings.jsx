@@ -110,7 +110,7 @@ class Settings extends React.Component {
             />
           </p>
 
-          <p style={{marginBottom:0}}>
+          <p>
             <FormControlLabel
               control={
                 <Switch
@@ -122,6 +122,22 @@ class Settings extends React.Component {
               label="Simulate Weather"
             />
             <FormHelperText>Simulate cloud cover from localized hourly weather predictions.</FormHelperText>
+          </p>
+
+          <p style={{marginBottom:0}}>
+            <TextField
+              label={(<span style={{backgroundColor:this.state.sim_date===this.state._orig_settings?.sim_date ? '' : '#FFFF99'}}>Simulate Date</span>)}
+              value={this.state.sim_date}
+              onChange={(e => this.setState({sim_date:e.target.value}))}
+              type='date'
+              helperText="Lock all simulations to a specific day."
+              InputLabelProps={{ shrink: true }}
+            />
+            <FormHelperText>
+              Leave blank (recommended) to simulate sun/moon movements matching the seasons at 
+              your location.  Set to make every day's sun/moon movement match a specifc date 
+              at your location.
+            </FormHelperText>
           </p>
 
         </Paper>

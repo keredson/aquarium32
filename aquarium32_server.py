@@ -4,6 +4,7 @@ import datetime
 import json
 import util
 
+import aquarium32
 
 def setup(tank):
 
@@ -59,18 +60,16 @@ def setup(tank):
   @uttp.post('/settings.json')
   def save_settings(req):
     new_settings = req.json()
+    if new_settings.get('sim_day')=='':
+      new_settings['sim_day'] = None
     with open('aquarium32_settings.json','w') as f:
       json.dump(new_settings, f)
+    tank.load_settings()
     yield 'ok'
 
   @uttp.get('/settings.json')
   def settings(req):
-    try:
-      with open('aquarium32_settings.json') as f:
-        yield json.load(f)
-    except Exception as e:
-      util.print_exception(e)
-      yield {}
+    yield {k:getattr(tank.settings, k) for k in aquarium32.SETTINGS_FIELDS.keys()}
      
   
   #uttp.run_daemon()

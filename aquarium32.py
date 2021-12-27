@@ -22,6 +22,8 @@ import aquarium32_server
 
 MAX_RADIATION = 1500
 
+DATE_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})')
+
 
 SETTINGS_FIELDS = {
   'num_leds': None,
@@ -29,6 +31,7 @@ SETTINGS_FIELDS = {
   'lng': None,
   'sun_color': None,
   'skip_weather': None,
+  'sim_date': None,
 }
 Settings = collections.namedtuple('Settings', SETTINGS_FIELDS.keys())
 
@@ -76,7 +79,8 @@ class Aquarium32:
         settings.update(json.load(f))
         self.settings = Settings(**settings)
         print('loaded', self.settings)
-        self.lat, self.lng = self.settings.lat, self.settings.lng
+        if self.settings.lat: self.lat = self.settings.lat
+        if self.settings.lng: self.lng = self.settings.lng
         sun_color = self.settings.sun_color
         if sun_color:
           sun_color = sun_color.lstrip('#')
@@ -112,6 +116,9 @@ class Aquarium32:
     self.ntp_check()
     self.update_weather()
     gc.collect()
+    
+    if m := DATE_RE.match(self.settings.sim_date):
+      now = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), now.hour, now.minute, now.second)      
     
     if skip_weather is None:
       skip_weather = self.settings.skip_weather
