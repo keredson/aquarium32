@@ -15,15 +15,12 @@
 #    You should have received a copy of the GNU General Public License along
 #    with Pysolar. If not, see <http://www.gnu.org/licenses/>.
 
-"""This file contains functions related to time conversion.
-"""
 import warnings
 import sys
 import datetime
 import time
 from .constants import \
     seconds_per_day
-from pysolar.tzinfo_check import check_aware_dt
 
 julian_day_offset = 1721425 - 0.5 # add to datetime.datetime.toordinal() to get Julian day number
 gregorian_day_offset = 719163 # number of days to add to datetime.datetime.timestamp() / seconds_per_day to agree with datetime.datetime.toordinal()
@@ -91,9 +88,7 @@ leap_seconds_adjustments = \
       (0, 0),  # 2021
     ]
 
-@check_aware_dt('when')
 def get_leap_seconds(when) :
-    "returns adjustment to be added to UTC at the specified datetime to produce TAI."
     when = when.utctimetuple()
     adj = 10 # as decreed from 1972
     year = leap_seconds_base_year
@@ -717,9 +712,7 @@ delta_t = \
         ],
     ] # delta_t
 
-@check_aware_dt('when')
 def get_delta_t(when) :
-    "returns a suitable value for delta_t for the given datetime."
     when = when.utctimetuple()
     year, month = when.tm_year, when.tm_mon
     if year < delta_t_base_year :
@@ -738,12 +731,7 @@ def get_delta_t(when) :
           # don't bother doing any fancy interpolation
 #end get_delta_t
 
-@check_aware_dt('when')
 def get_julian_solar_day(when):
-    "returns the UT Julian day number (including fraction of a day) corresponding to" \
-    " the specified date/time. This version assumes the proleptic Gregorian calendar;" \
-    " trying to adjust for pre-Gregorian dates/times seems pointless when the changeover" \
-    " happened over such wildly varying times in different regions."
     return \
         (
                 (when.timestamp() + get_leap_seconds(when) + tt_offset - get_delta_t(when))
@@ -756,12 +744,7 @@ def get_julian_solar_day(when):
         )
 #end get_julian_solar_day
 
-@check_aware_dt('when')
 def get_julian_ephemeris_day(when) :
-    "returns the TT Julian day number (including fraction of a day) corresponding to" \
-    " the specified date/time. This version assumes the proleptic Gregorian calendar;" \
-    " trying to adjust for pre-Gregorian dates/times seems pointless when the changeover" \
-    " happened over such wildly varying times in different regions."
     return \
         (
                 (when.timestamp() + get_leap_seconds(when) + tt_offset)

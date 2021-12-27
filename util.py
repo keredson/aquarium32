@@ -1,4 +1,4 @@
-import gc, re, sys
+import collections, gc, re, sys
 try:
   import ntptime
   ON_ESP32 = True
@@ -11,6 +11,17 @@ import urequests as requests
 NTP_CHECK_INTERVAL_SECONDS = 60*60*24*7
 WEATHER_UPDATE_INTERVAL_SECONDS = 60*60*24
 DEFAULT_LAT, DEFAULT_LNG = 39.8283, -98.5795
+
+SETTINGS_FIELDS = {
+  'num_leds': None,
+  'lat': None,
+  'lng': None,
+  'sun_color': None,
+  'skip_weather': None,
+  'sim_date': None,
+}
+
+Settings = collections.namedtuple('Settings', list(SETTINGS_FIELDS.keys()))
 
 
 def update_weather(self):

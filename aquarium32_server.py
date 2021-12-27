@@ -4,7 +4,6 @@ import datetime
 import json
 import util
 
-import aquarium32
 
 def setup(tank):
 
@@ -69,7 +68,7 @@ def setup(tank):
 
   @uttp.get('/settings.json')
   def settings(req):
-    yield {k:getattr(tank.settings, k) for k in aquarium32.SETTINGS_FIELDS.keys()}
+    yield {k:getattr(tank.settings, k) for k in util.SETTINGS_FIELDS.keys()}
      
   
   #uttp.run_daemon()

@@ -17,7 +17,6 @@ import uttp
 import util
 
 
-import aquarium32_server
 
 
 MAX_RADIATION = 1500
@@ -25,15 +24,6 @@ MAX_RADIATION = 1500
 DATE_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})')
 
 
-SETTINGS_FIELDS = {
-  'num_leds': None,
-  'lat': None,
-  'lng': None,
-  'sun_color': None,
-  'skip_weather': None,
-  'sim_date': None,
-}
-Settings = collections.namedtuple('Settings', SETTINGS_FIELDS.keys())
 
 Color = collections.namedtuple('Color', 'r g b')
 
@@ -75,9 +65,9 @@ class Aquarium32:
   def load_settings(self):
     try:
       with open('aquarium32_settings.json') as f:
-        settings = dict(SETTINGS_FIELDS)
+        settings = dict(util.SETTINGS_FIELDS)
         settings.update(json.load(f))
-        self.settings = Settings(**settings)
+        self.settings = util.Settings(**settings)
         print('loaded', self.settings)
         if self.settings.lat: self.lat = self.settings.lat
         if self.settings.lng: self.lng = self.settings.lng
@@ -86,10 +76,10 @@ class Aquarium32:
           sun_color = sun_color.lstrip('#')
           if len(sun_color)==6:
             self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
-    except FileNotFoundError as e:
-      self.settings = Settings()
+    except OSError as e:
+      self.settings = util.Settings(None,None,None,None,None,None)
     except Exception as e:
-      self.settings = Settings()
+      self.settings = util.Settings(None,None,None,None,None,None)
       util.print_exception(e)
       
   
@@ -117,7 +107,8 @@ class Aquarium32:
     self.update_weather()
     gc.collect()
     
-    if m := DATE_RE.match(self.settings.sim_date):
+    m = DATE_RE.match(self.settings.sim_date) if self.settings.sim_date else None
+    if m:
       now = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), now.hour, now.minute, now.second)      
     
     if skip_weather is None:

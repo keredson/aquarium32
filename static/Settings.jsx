@@ -124,7 +124,7 @@ class Settings extends React.Component {
             <FormHelperText>Simulate cloud cover from localized hourly weather predictions.</FormHelperText>
           </p>
 
-          <p style={{marginBottom:0}}>
+          <p>
             <TextField
               label={(<span style={{backgroundColor:this.state.sim_date===this.state._orig_settings?.sim_date ? '' : '#FFFF99'}}>Simulate Date</span>)}
               value={this.state.sim_date}
@@ -140,6 +140,28 @@ class Settings extends React.Component {
             </FormHelperText>
           </p>
 
+          <p style={{marginBottom:0}}>
+            <TextField
+              label={(<span style={{backgroundColor:this.state.lat===this.state._orig_settings?.lat ? '' : '#FFFF99'}}>Latitude</span>)}
+              value={this.state.lat || ''}
+              onChange={(e => this.setState({lat:parseFloat(e.target.value)}))}
+              InputLabelProps={{ shrink: true }}
+              placeholder='39.8283'
+            />
+            &nbsp;
+            <TextField
+              label={(<span style={{backgroundColor:this.state.lng===this.state._orig_settings?.lng ? '' : '#FFFF99'}}>Longitude</span>)}
+              value={this.state.lng || ''}
+              onChange={(e => this.setState({lng:parseFloat(e.target.value)}))}
+              InputLabelProps={{ shrink: true }}
+              placeholder='-98.5795'
+            />
+            <FormHelperText>
+              Leave blank (recommended) to automatically detect your location from your IP address.
+              (An approximation to your city/town.)
+            </FormHelperText>
+          </p>
+
         </Paper>
 
         <Typography variant="body1">
@@ -151,6 +173,7 @@ class Settings extends React.Component {
             Reset
           </Button>
         </Typography>
+
 
       </div>
     )

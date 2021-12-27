@@ -15,36 +15,10 @@
 #    You should have received a copy of the GNU General Public License along
 #    with Pysolar. If not, see <http://www.gnu.org/licenses/>.
 
-"""This file is consists of numerical constants for calculating corrections,
-such as the wiggling ("nutation") of the axis of the earth. It also includes
-functions for building dictionaries of polynomial functions for rapid
-calculation of corrections.
-
-Most of the constants come from a 2005 paper by Reda and Andreas:
-
-I. Reda and A. Andreas, "Solar Position Algorithm for Solar Radiation
-Applications," National Renewable Energy Laboratory, NREL/TP-560-34302,
-revised November 2005.
-
-http://www.osti.gov/bridge/servlets/purl/15003974-iP3z6k/native/15003974.PDF
-
-However, it seems that Reda and Andreas took the bulk of the constants
-(L0, etc.) from Pierre Bretagnon and Gerard Francou's Variations Seculaires
-des Orbites Planetaires, or VSOP87:
-
-http://en.wikipedia.org/wiki/Secular_variations_of_the_planetary_orbits#VSOP87
-
-See also ftp://ftp.imcce.fr/pub/ephem/planets/vsop87/VSOP87D.ear
-
-"""
 
 aberration_coeffs = None
 
 def get_aberration_coeffs():
-    """This function builds a dictionary of polynomial functions from a list of
-    coefficients, so that the functions can be called by name. This is used in
-    calculating nutation.
-    """
     global aberration_coeffs
     if aberration_coeffs == None :
         aberration_coeffs = dict \

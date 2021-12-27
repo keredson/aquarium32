@@ -25,22 +25,8 @@ import datetime
 from . import constants
 from . import solartime as stime
 from . import radiation
-from .tzinfo_check import check_aware_dt
 
 
-def solar_test():
-    latitude_deg = 42.364908
-    longitude_deg = -71.112828
-    d = datetime.datetime.now(tz=datetime.timezone.utc)
-    thirty_minutes = datetime.timedelta(hours = 0.5)
-    for _ in range(48):
-        timestamp = d.ctime()
-        altitude_deg = get_altitude(latitude_deg, longitude_deg, d)
-        azimuth_deg = get_azimuth(latitude_deg, longitude_deg, d)
-        power = radiation.get_radiation_direct(d, altitude_deg)
-        if (altitude_deg > 0):
-            print(timestamp, "UTC", altitude_deg, azimuth_deg, power)
-        d = d + thirty_minutes
 
 
 def equation_of_time(day):
@@ -53,7 +39,6 @@ def get_aberration_correction(sun_earth_distance):     # sun-earth distance is i
     return -20.4898/(3600.0 * sun_earth_distance)
 
 
-@check_aware_dt('when')
 def get_topocentric_position(latitude_deg, longitude_deg, when, elevation = 0):
     '''Common calculations for altitude and azimuth'''
     # location-dependent calculations
@@ -86,37 +71,8 @@ def get_topocentric_position(latitude_deg, longitude_deg, when, elevation = 0):
     return topocentric_sun_declination, topocentric_local_hour_angle
 
 
-@check_aware_dt('when')
-def get_position(latitude_deg, longitude_deg, when, elevation=0,
-                 temperature = constants.standard_temperature,
-                 pressure = constants.standard_pressure):
-    ''' Given location, time and atmospheric conditions
-    temperature in Kelvin and pressure in Pascal
-    
-    returns (azimuth, altitude) of sun in degrees.
-
-    Same as a combination of get_azimuth and get_altitude
-    '''
-
-    topocentric_sun_declination, topocentric_local_hour_angle = \
-        get_topocentric_position(latitude_deg, longitude_deg, when, elevation)
-
-    topocentric_elevation_angle = \
-        get_topocentric_elevation_angle(latitude_deg, topocentric_sun_declination,
-                                        topocentric_local_hour_angle)
-
-    refraction_correction = get_refraction_correction(pressure, temperature,
-                                                      topocentric_elevation_angle)
-
-    altitude_deg = topocentric_elevation_angle + refraction_correction
-
-    azimuth_deg = get_topocentric_azimuth_angle(topocentric_local_hour_angle,
-                                      latitude_deg, topocentric_sun_declination)
-
-    return azimuth_deg, altitude_deg
 
 
-@check_aware_dt('when')
 def get_altitude(latitude_deg, longitude_deg, when, elevation = 0,
                  temperature = constants.standard_temperature, pressure = constants.standard_pressure):
     '''See also the faster, but less accurate, get_altitude_fast()
@@ -130,16 +86,6 @@ def get_altitude(latitude_deg, longitude_deg, when, elevation = 0,
     return topocentric_elevation_angle + refraction_correction
 
 
-@check_aware_dt('when')
-def get_altitude_fast(latitude_deg, longitude_deg, when):
-# expect 19 degrees for solar.get_altitude(42.364908,-71.112828,datetime.datetime(2007, 2, 18, 20, 13, 1, 130320))
-    day = math.tm_yday(when)
-    declination_rad = math.radians(get_declination(day))
-    latitude_rad = math.radians(latitude_deg)
-    hour_angle = get_hour_angle(when, longitude_deg)
-    first_term = math.cos(latitude_rad) * math.cos(declination_rad) * math.cos(math.radians(hour_angle))
-    second_term = math.sin(latitude_rad) * math.sin(declination_rad)
-    return math.degrees(math.asin(first_term + second_term))
 
 
 def get_apparent_sidereal_time(jd, jme, nutation):
@@ -150,7 +96,6 @@ def get_apparent_sun_longitude(geocentric_longitude, nutation, ab_correction):
     return geocentric_longitude + nutation['longitude'] + ab_correction
 
 
-@check_aware_dt('when')
 def get_azimuth(latitude_deg, longitude_deg, when, elevation = 0):
 
     topocentric_sun_declination, topocentric_local_hour_angle = \
@@ -162,20 +107,6 @@ def get_azimuth(latitude_deg, longitude_deg, when, elevation = 0):
     return azimuth
 
 
-def get_azimuth_fast(latitude_deg, longitude_deg, when):
-# expect 230 degrees for solar.get_azimuth(42.364908,-71.112828,datetime.datetime(2007, 2, 18, 20, 18, 0, 0))
-    day = math.tm_yday(when)
-    declination_rad = math.radians(get_declination(day))
-    latitude_rad = math.radians(latitude_deg)
-    hour_angle_rad = math.radians(get_hour_angle(when, longitude_deg))
-    altitude_rad = math.radians(get_altitude_fast(latitude_deg, longitude_deg, when))
-
-    azimuth_rad = math.asin(-math.cos(declination_rad) * math.sin(hour_angle_rad) / math.cos(altitude_rad))
-
-    return math.where(math.cos(hour_angle_rad) * math.tan(latitude_rad) >= math.tan(declination_rad),
-                      (180 - math.degrees(azimuth_rad)),
-                      math.degrees(azimuth_rad) + 360 * (azimuth_rad < 0)
-                     )
 
 def get_coeff(jme, coeffs):
     "computes a polynomial with time-varying coefficients from the given constant" \
@@ -194,13 +125,6 @@ def get_coeff(jme, coeffs):
         result
 #end get_coeff
 
-def get_declination(day):
-    '''The declination of the sun is the angle between
-    Earth's equatorial plane and a line between the Earth and the sun.
-    The declination of the sun varies between 23.45 degrees and -23.45 degrees,
-    hitting zero on the equinoxes and peaking on the solstices.
-    '''
-    return constants.earth_axis_inclination * math.sin((2 * math.pi / 365.0) * (day - 81))
 
 def get_equatorial_horizontal_parallax(sun_earth_distance):
     return 8.794 / (3600 / sun_earth_distance)
@@ -246,17 +170,7 @@ def get_heliocentric_latitude(jme):
 def get_heliocentric_longitude(jme):
     return math.degrees(get_coeff(jme, constants.heliocentric_longitude_coeffs) / 1e8) % 360
 
-@check_aware_dt('when')
-def get_hour_angle(when, longitude_deg):
-    solar_time = get_solar_time(longitude_deg, when)
-    return 15.0 * (solar_time - 12.0)
 
-def get_incidence_angle(topocentric_zenith_angle, slope, slope_orientation, topocentric_azimuth_angle):
-    tza_rad = math.radians(topocentric_zenith_angle)
-    slope_rad = math.radians(slope)
-    so_rad = math.radians(slope_orientation)
-    taa_rad = math.radians(topocentric_azimuth_angle)
-    return math.degrees(math.acos(math.cos(tza_rad) * math.cos(slope_rad) + math.sin(slope_rad) * math.sin(tza_rad) * math.cos(taa_rad - math.pi - so_rad)))
 
 def get_local_hour_angle(apparent_sidereal_time, longitude, geocentric_sun_right_ascension):
     return (apparent_sidereal_time + longitude - geocentric_sun_right_ascension) % 360
@@ -343,17 +257,6 @@ def get_refraction_correction(pressure, temperature, topocentric_elevation_angle
 
     return del_e
 
-@check_aware_dt('when')
-def get_solar_time(longitude_deg, when):
-    "returns solar time in hours for the specified longitude and time," \
-    " accurate only to the nearest minute."
-    return \
-        (
-            (math.tm_hour(when) * 60 + math.tm_min(when) + 4 * longitude_deg + equation_of_time(math.tm_yday(when)))
-        /
-            60
-        )
-
 # Topocentric functions calculate angles relative to a location on the surface of the earth.
 
 def get_topocentric_azimuth_angle(topocentric_local_hour_angle, latitude, topocentric_sun_declination):
@@ -384,16 +287,7 @@ def get_topocentric_sun_declination(geocentric_sun_declination, projected_axial_
     b = math.cos(gsd_rad) - (pad * math.sin(ehp_rad) * math.cos(lha_rad))
     return math.degrees(math.atan2(a, b))
 
-def get_topocentric_sun_right_ascension(projected_radial_distance, equatorial_horizontal_parallax, local_hour_angle,
-        apparent_sun_longitude, true_ecliptic_obliquity, geocentric_latitude):
-    gsd = get_geocentric_sun_declination(apparent_sun_longitude, true_ecliptic_obliquity, geocentric_latitude)
-    psra = get_parallax_sun_right_ascension(projected_radial_distance, equatorial_horizontal_parallax, local_hour_angle, gsd)
-    gsra = get_geocentric_sun_right_ascension(apparent_sun_longitude, true_ecliptic_obliquity, geocentric_latitude)
-    return psra + gsra
 
-def get_topocentric_zenith_angle(latitude, topocentric_sun_declination, topocentric_local_hour_angle, pressure, temperature):
-    tea = get_topocentric_elevation_angle(latitude, topocentric_sun_declination, topocentric_local_hour_angle)
-    return 90 - tea - get_refraction_correction(pressure, temperature, tea)
 
 def get_true_ecliptic_obliquity(jme, nutation):
     u = jme/10.0
