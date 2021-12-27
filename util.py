@@ -77,3 +77,24 @@ def print_exception(e):
     sys.print_exception(e)
   else:
     print('print_exception', e)
+    
+def load_settings(self):
+  try:
+    with open('aquarium32_settings.json') as f:
+      settings = dict(SETTINGS_FIELDS)
+      settings.update(json.load(f))
+      self.settings = Settings(**settings)
+      print('loaded', self.settings)
+      if self.settings.lat: self.lat = self.settings.lat
+      if self.settings.lng: self.lng = self.settings.lng
+      sun_color = self.settings.sun_color
+      if sun_color:
+        sun_color = sun_color.lstrip('#')
+        if len(sun_color)==6:
+          self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
+  except OSError as e:
+    self.settings = Settings(None,None,None,None,None,None)
+  except Exception as e:
+    self.settings = Settings(None,None,None,None,None,None)
+    print_exception(e)
+

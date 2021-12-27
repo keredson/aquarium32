@@ -33,7 +33,7 @@ class Aquarium32:
     print('Aquarium32')
     self.last_ntp_check = 0
     
-    self.load_settings()
+    util.load_settings(self)
 
     self.lat, self.lng = util.DEFAULT_LAT, util.DEFAULT_LNG
     self.city = None
@@ -62,25 +62,6 @@ class Aquarium32:
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
     
-  def load_settings(self):
-    try:
-      with open('aquarium32_settings.json') as f:
-        settings = dict(util.SETTINGS_FIELDS)
-        settings.update(json.load(f))
-        self.settings = util.Settings(**settings)
-        print('loaded', self.settings)
-        if self.settings.lat: self.lat = self.settings.lat
-        if self.settings.lng: self.lng = self.settings.lng
-        sun_color = self.settings.sun_color
-        if sun_color:
-          sun_color = sun_color.lstrip('#')
-          if len(sun_color)==6:
-            self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
-    except OSError as e:
-      self.settings = util.Settings(None,None,None,None,None,None)
-    except Exception as e:
-      self.settings = util.Settings(None,None,None,None,None,None)
-      util.print_exception(e)
       
   
   @property
