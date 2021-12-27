@@ -28,7 +28,10 @@ class Home extends React.Component {
     this.setState({loading_tank:true})
     fetch('/status.json')
     .then(response => response.json())
-    .then(data => this.setState({tank:data, loading_tank:false}));
+    .then(data => {
+      this.setState({tank:data, loading_tank:false})
+      setTimeout(this.update.bind(this), 60000)
+    });
   }
   
   render_dict(d) {

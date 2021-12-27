@@ -5,6 +5,8 @@ import uttp
 import json
 
 
+INCLUDE_JQUERY_STUB = True
+
 CLASS_MAP = None
 
 def init(jsx_path='static'):
@@ -26,8 +28,10 @@ def init(jsx_path='static'):
 
 #init()
 
+
+
 @uttp.get(r'/__uttpreact__')
-def __uttpreact__():
+def __uttpreact__(req):
   yield uttp.header('Content-Type', 'text/javascript')
   yield '''
     function __uttpreact_onload__(start) {
@@ -43,4 +47,22 @@ def __uttpreact__():
       }
     };
   '''
+  if INCLUDE_JQUERY_STUB:
+    yield '''
+      $ = {
+        postJSON: function(path, data) {
+          return fetch(path, {
+            method: 'post',
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(data),
+          })
+        },
+        getJSON: function(path) {
+          return fetch(path, {
+            method: 'get',
+          })
+          .then(response => response.json())
+        },
+      }
+    '''
 

@@ -11,6 +11,7 @@ class Request:
   def __init__(self, app, f):
     request_line = f.readline().decode()
     self.app = app
+    self._f = f
     if not request_line: raise Exception('empty request')
     self.method, path, self.proto = request_line.split()
     path = path.split('?', 1)
@@ -19,6 +20,8 @@ class Request:
     if self.method=='GET':
       qs = path[1] if len(path)>1 else None
       self.params = dict(parse_qs(qs))
+    else:
+      self.params = {}
 
     self.headers = {}
     while header_line := f.readline():
@@ -26,16 +29,15 @@ class Request:
       k, v = header_line.decode().strip().split(': ')
       self.headers[k] = v
 
-    if self.method=='POST':
-      length = int(self.headers['Content-Length'])
-      post_data = f.read(length)
-      print('post_data', post_data)
-      if self.headers['Content-Type'] == 'application/json':
-        self.params = json.loads(post_data)
-      else:
-        self.params = dict(parse_qs(post_data))
-
     print('%s:'%self.app.name, self.proto, self.method, self.path, self.params)
+    
+  def json(self):
+    length = int(self.headers['Content-Length'])
+    post_data = self._f.read(length)
+    print('post_data', post_data)
+    assert self.headers['Content-Type'] == 'application/json'
+    return json.loads(post_data)
+    
 
 
 class Response:
@@ -94,12 +96,11 @@ class Route:
       _pattern = re.sub(r'<\w+>', '([^/]+)', pattern)+'$'
       self.pattern = re.compile(_pattern)
       
-  def handle(self, match):
-    global request, response
+  def handle(self, request, response, match):
     f = response.f
-    args = []
+    args = [request]
     while True:
-      try: args.append(match.group(len(args)+1))
+      try: args.append(match.group(len(args)))
       except IndexError: break # no more args
     for ret in self.f(*args):
       if isinstance(ret, status):
@@ -173,19 +174,16 @@ class App:
 
 
   def handle(self, f):
-    global request, response
     request = Request(self, f)
     response = Response(f)
     for route in _chain(self._get_routes(request.method), self._get_routes('*')):
       match = route.pattern.match(request.path)
       if match:
         response.handled_by = route
-        route.handle(match)
+        route.handle(request, response, match)
         break
     else:
       response.start(status=status(404))
-    request = None
-    response = None
     
 
 class status:
@@ -209,9 +207,6 @@ get = DEFAULT.get
 post = DEFAULT.post
 run = DEFAULT.run
 run_daemon = DEFAULT.run_daemon
-
-request = None
-response = None
 
 
 def file(fn):

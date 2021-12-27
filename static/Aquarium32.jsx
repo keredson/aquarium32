@@ -14,10 +14,18 @@ class Aquarium32 extends React.Component {
 
   constructor(props) {
     super(props)
+    console.log('location.hash', location.hash)
     this.state = {
       drawer_open: false,
-      page: 'home',
+      page: location.hash.substring(1) || 'home',
     }
+    window.addEventListener("hashchange", () => {
+      this.setState({page: location.hash.substring(1) || 'home', drawer_open:false})
+    }, false);
+  }
+  
+  nav_to(page) {
+    location.hash = '#'+page
   }
   
   render() {
@@ -27,13 +35,13 @@ class Aquarium32 extends React.Component {
         <div style={{height:'64px'}} />
         <Divider />
         <List>
-          <ListItem button onClick={() => this.setState({page:'home'})}>
+          <ListItem button onClick={() => this.nav_to('home')}>
             <ListItemIcon>
               <Icon>home</Icon>
             </ListItemIcon>
             <ListItemText primary={'Home'} />
           </ListItem>
-          <ListItem button onClick={() => this.setState({page:'settings'})}>
+          <ListItem button onClick={() => this.nav_to('settings')}>
             <ListItemIcon>
               <Icon>settings</Icon>
             </ListItemIcon>
@@ -66,6 +74,7 @@ class Aquarium32 extends React.Component {
         </Drawer>
         <div style={{margin: '12px', marginTop:'76px'}}>
           {this.state.page=='home' ? (<Home />) : null}
+          {this.state.page=='settings' ? (<Settings />) : null}
         </div>
       </div>
     )

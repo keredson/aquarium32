@@ -46,6 +46,7 @@ except MemoryError as e:
 tank = aquarium32.Aquarium32()
 import aquarium32_server
 aquarium32_server.setup(tank)
-uttp.run_daemon(port=80 if ON_ESP32 else 8080)
-tank.main()
+#uttp.run_daemon(port=80 if ON_ESP32 else 8080)
+uttp.run(port=80 if ON_ESP32 else 8080)
+#tank.main()
 

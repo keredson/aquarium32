@@ -1,8 +1,4 @@
-import time
-import math
-import datetime
-import re
-import sys
+import collections, datetime, math, os, re, sys, time
 
 try: 
   import gc
@@ -27,7 +23,7 @@ import aquarium32_server
 MAX_RADIATION = 1500
 
 
-DEFAULT_LOCATION = 'USA'
+Settings = collections.namedtuple('Settings', 'num_leds, lat, lng', defaults=(None,None,None,))
 
 class Aquarium32:
 
@@ -35,9 +31,7 @@ class Aquarium32:
     print('Aquarium32')
     self.last_ntp_check = 0
     
-    self.settings = {
-      'num_leds': 144*2,
-    }
+    self.load_settings()
 
     self.lat, self.lng = util.DEFAULT_LAT, util.DEFAULT_LNG
     self.city = None
@@ -65,9 +59,21 @@ class Aquarium32:
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
     
+  def load_settings(self):
+    try:
+      with open('aquarium32_settings.json') as f:
+        self.settings = Settings(**json.load(f))
+        self.lat, self.lng = self.settings.lat, self.settings.lng
+    except FileNotFoundError as e:
+      self.settings = Settings()
+    except Exception as e:
+      self.settings = Settings()
+      util.print_exception(e)
+      
+  
   @property
   def num_leds(self):
-    return self.settings.get('num_leds', 144)
+    return self.settings.num_leds or 144
     
   def clear(self):
     if self.np:
@@ -179,6 +185,7 @@ class Aquarium32:
 
   
   def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 5):
+    orig_state = self.state
     self.state = 'sim_day'
     ts = start.timestamp()
     for i in range(24*60//step_mins):
@@ -186,11 +193,12 @@ class Aquarium32:
       try:
         self.update_leds(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
       except MemoryError as e:
-        sys.print_exception(e)
+        util.print_exception(e)
+    self.state = orig_state
   
   
   def main(self):
-    self.locate()
+    if not self.lat or not self.lng: self.locate()
     while True:
       f = getattr(self, self.state)
       if f: f()
@@ -202,7 +210,7 @@ class Aquarium32:
     while True:
       if self.state != 'realtime': break
       self.update_leds(datetime.datetime.now())
-      time.sleep(5)
+      time.sleep(1)
 
   def off(self):
     self.state = 'off'

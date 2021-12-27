@@ -61,3 +61,8 @@ def locate(self):
   except Exception as e:
     sys.print_exception(e)
 
+def print_exception(e):
+  if hasattr(sys, 'print_exception'):
+    sys.print_exception(e)
+  else:
+    print('print_exception', e)

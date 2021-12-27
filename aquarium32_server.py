@@ -1,6 +1,8 @@
 import uttp
 import uttpreact
 import datetime
+import json
+import util
 
 
 def setup(tank):
@@ -8,17 +10,17 @@ def setup(tank):
   uttpreact.init()
   
   @uttp.get('/hello')
-  def hello():
+  def hello(req):
     yield 'hello '
     yield uttp.request.params.get('name', 'world')
 
   @uttp.get('/')
-  def index():
+  def index(req):
     with open('static/index.html') as f:
       yield f
 
   @uttp.get('/static/<fn>')
-  def static_file(fn):
+  def static_file(req, fn):
     fn = 'static/'+fn
     try:
       with open(fn) as f:
@@ -29,8 +31,8 @@ def setup(tank):
       yield uttp.status(404)
 
   @uttp.post('/set_state')
-  def set_state():
-    state = uttp.request.params.get('state')
+  def set_state(req):
+    state = req.json().get('state')
     if state:
       tank.state = state
       yield 'ok'
@@ -38,7 +40,7 @@ def setup(tank):
       yield uttp.status(400)
 
   @uttp.get('/status.json')
-  def status():
+  def status(req):
     yield {
       'clouds': None,
       'last_weather_update': str(datetime.datetime.fromtimestamp(tank.last_weather_update)) if tank.last_weather_update else None,
@@ -53,6 +55,23 @@ def setup(tank):
       'when': str(tank.when),
       'state': tank.state,
     }
+  
+  @uttp.post('/settings.json')
+  def save_settings(req):
+    new_settings = req.json()
+    with open('aquarium32_settings.json','w') as f:
+      json.dump(new_settings, f)
+    yield 'ok'
+
+  @uttp.get('/settings.json')
+  def settings(req):
+    try:
+      with open('aquarium32_settings.json') as f:
+        yield json.load(f)
+    except Exception as e:
+      util.print_exception(e)
+      yield {}
+     
   
   #uttp.run_daemon()
   #uttp.run()
