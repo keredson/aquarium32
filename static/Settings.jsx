@@ -6,7 +6,7 @@ const {
   TableContainer, Table, TableHead, TableRow, TableCell, TableBody, 
   Typography,
   Select, MenuItem,
-  TextField, 
+  TextField, FormControlLabel, Switch, FormHelperText
 } = window.MaterialUI;
 
 class Settings extends React.Component {
@@ -84,28 +84,46 @@ class Settings extends React.Component {
           * Required
         </Typography>
 
-        <Paper style={{padding:'1em'}}>
-          <TextField
-            label={(<span style={{backgroundColor:this.state.num_leds===this.state._orig_settings?.num_leds ? '' : '#FFFF99'}}>Number of LEDs</span>)}
-            type="number"
-            required
-            value={this.state.num_leds}
-            defaultValue='1'
-            onChange={(e => this.setState({num_leds:parseInt(e.target.value)}))}
-            helperText="LED strips typically have either 30 or 144 LEDs per meter.  Waterproof recommended."
-            InputLabelProps={{ shrink: true }}
-            placeholder='144'
-            style={{marginBottom:'1em'}}
-          />
+        <Paper style={{padding:'1em 1em'}}>
+          <p style={{marginTop:0}}>
+            <TextField
+              label={(<span style={{backgroundColor:this.state.num_leds===this.state._orig_settings?.num_leds ? '' : '#FFFF99'}}>Number of LEDs</span>)}
+              type="number"
+              required
+              value={this.state.num_leds}
+              defaultValue='1'
+              onChange={(e => this.setState({num_leds:parseInt(e.target.value)}))}
+              helperText="LED strips typically have either 30 or 144 LEDs per meter.  Waterproof recommended."
+              InputLabelProps={{ shrink: true }}
+              placeholder='144'
+            />
+          </p>
 
-          <TextField
-            label={(<span style={{backgroundColor:this.state.sun_color===this.state._orig_settings?.sun_color ? '' : '#FFFF99'}}>Sun Color</span>)}
-            value={this.state.sun_color}
-            onChange={(e => this.setState({sun_color:e.target.value}))}
-            helperText="Typically #FFFFFF (default) or #FFFFDD (more yellow)."
-            InputLabelProps={{ shrink: true }}
-            placeholder='#FFFFFF'
-          />
+          <p>
+            <TextField
+              label={(<span style={{backgroundColor:this.state.sun_color===this.state._orig_settings?.sun_color ? '' : '#FFFF99'}}>Sun Color</span>)}
+              value={this.state.sun_color}
+              onChange={(e => this.setState({sun_color:e.target.value}))}
+              helperText="Typically #FFFFFF (default) or #FFFFDD (more yellow)."
+              InputLabelProps={{ shrink: true }}
+              placeholder='#FFFFFF'
+            />
+          </p>
+
+          <p style={{marginBottom:0}}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={this.state.skip_weather ? 'on': null}
+                  onChange={(e => this.setState({skip_weather:e.target.checked}))}
+                  name="checkedB"
+                  color="primary"
+                />
+              }
+              label="Skip Weather"
+            />
+            <FormHelperText>Don't simulate cloud cover.</FormHelperText>
+          </p>
 
         </Paper>
 
@@ -119,8 +137,6 @@ class Settings extends React.Component {
           </Button>
         </Typography>
 
-        <p>
-        </p>
       </div>
     )
   }

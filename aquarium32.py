@@ -23,7 +23,15 @@ import aquarium32_server
 MAX_RADIATION = 1500
 
 
-Settings = collections.namedtuple('Settings', 'num_leds, lat, lng, sun_color', defaults=(None,None,None,None))
+SETTINGS_FIELDS = {
+  'num_leds': None,
+  'lat': None,
+  'lng': None,
+  'sun_color': None,
+  'skip_weather': None,
+}
+Settings = collections.namedtuple('Settings', SETTINGS_FIELDS.keys())
+
 Color = collections.namedtuple('Color', 'r g b')
 
 class Aquarium32:
@@ -64,7 +72,9 @@ class Aquarium32:
   def load_settings(self):
     try:
       with open('aquarium32_settings.json') as f:
-        self.settings = Settings(**json.load(f))
+        settings = dict(SETTINGS_FIELDS)
+        settings.update(json.load(f))
+        self.settings = Settings(**settings)
         print('loaded', self.settings)
         self.lat, self.lng = self.settings.lat, self.settings.lng
         sun_color = self.settings.sun_color
@@ -98,10 +108,14 @@ class Aquarium32:
   locate = util.locate
          
 
-  def update_leds(self, now):
+  def update_leds(self, now, skip_weather=None):
     self.ntp_check()
     self.update_weather()
     gc.collect()
+    
+    if skip_weather is None:
+      skip_weather = self.settings.skip_weather
+    
     altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
     #print('altitude', altitude)
     azimuth = pysolar.solar.get_azimuth(self.lat, self.lng, now) - 90
@@ -168,7 +182,7 @@ class Aquarium32:
         b = max(0, min(255, moon_brightness*255))
 
       # clouds
-      if self.clouds_3_hour_interval:
+      if not skip_weather and self.clouds_3_hour_interval:
         cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
         cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
         cloud_step = now.timestamp()/10
@@ -199,7 +213,7 @@ class Aquarium32:
     for i in range(24*60//step_mins):
       if self.state != 'sim_day': break
       try:
-        self.update_leds(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
+        self.update_leds(datetime.datetime.fromtimestamp(ts + i*60*step_mins), skip_weather=True)
       except MemoryError as e:
         util.print_exception(e)
     self.state = orig_state
