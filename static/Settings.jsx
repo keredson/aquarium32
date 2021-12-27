@@ -80,12 +80,12 @@ class Settings extends React.Component {
           )}
         </Typography>
 
-        <Typography variant="body1">
-          LED strips typically have either 30 or 144 LEDs per meter.
-        </Typography>
-
         <Typography variant="body2" style={{color:'#800', marginBottom:'1em'}}>
           * Required
+        </Typography>
+
+        <Typography variant="body1">
+          LED strips typically have either 30 or 144 LEDs per meter.  Waterproof recommended (<a href='https://www.amazon.com/gp/product/B01CDTE83U' target="_blank">example</a>).
         </Typography>
 
         <Typography variant="body1">
@@ -94,6 +94,7 @@ class Settings extends React.Component {
             type="number"
             required
             value={this.state.num_leds}
+            defaultValue='1'
             onChange={(e => this.setState({num_leds:parseInt(e.target.value)}))}
           />
         </Typography>
