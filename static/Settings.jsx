@@ -114,15 +114,14 @@ class Settings extends React.Component {
             <FormControlLabel
               control={
                 <Switch
-                  checked={this.state.skip_weather ? 'on': null}
-                  onChange={(e => this.setState({skip_weather:e.target.checked}))}
-                  name="checkedB"
+                  checked={this.state.skip_weather ? null : 'on'}
+                  onChange={(e => this.setState({skip_weather:!e.target.checked}))}
                   color="primary"
                 />
               }
-              label="Skip Weather"
+              label="Simulate Weather"
             />
-            <FormHelperText>Don't simulate cloud cover.</FormHelperText>
+            <FormHelperText>Simulate cloud cover from localized hourly weather predictions.</FormHelperText>
           </p>
 
         </Paper>
