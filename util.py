@@ -1,9 +1,13 @@
 import collections, gc, re, sys
 try:
+  import machine
   import ntptime
+  import ujson as json
+  import neopixel
   ON_ESP32 = True
 except ModuleNotFoundError: 
   ON_ESP32 = False
+  import json
 import time
 import urequests as requests
 
@@ -22,6 +26,7 @@ SETTINGS_FIELDS = {
 }
 
 Settings = collections.namedtuple('Settings', list(SETTINGS_FIELDS.keys()))
+Color = collections.namedtuple('Color', 'r g b')
 
 
 def update_weather(self):
@@ -81,6 +86,7 @@ def print_exception(e):
 def load_settings(self):
   try:
     with open('aquarium32_settings.json') as f:
+      print('found aquarium32_settings.json')
       settings = dict(SETTINGS_FIELDS)
       settings.update(json.load(f))
       self.settings = Settings(**settings)
@@ -93,8 +99,14 @@ def load_settings(self):
         if len(sun_color)==6:
           self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
   except OSError as e:
+    print('aquarium32_settings.json not found, loading defaults')
     self.settings = Settings(None,None,None,None,None,None)
   except Exception as e:
     self.settings = Settings(None,None,None,None,None,None)
     print_exception(e)
+  try:
+    self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
+  except NameError as e:
+    print_exception(e)
+    self.np = None
 

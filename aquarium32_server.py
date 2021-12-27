@@ -39,6 +39,15 @@ def setup(tank):
     else:
       yield uttp.status(400)
 
+  @uttp.post('/set_sun')
+  def set_state(req):
+    sun = req.json().get('sun')
+    if sun:
+      tank.sun = sun
+      yield 'ok'
+    else:
+      yield uttp.status(400)
+
   @uttp.get('/status.json')
   def status(req):
     yield {
@@ -63,7 +72,7 @@ def setup(tank):
       new_settings['sim_day'] = None
     with open('aquarium32_settings.json','w') as f:
       json.dump(new_settings, f)
-    tank.load_settings()
+    util.load_settings(tank)
     yield 'ok'
 
   @uttp.get('/settings.json')

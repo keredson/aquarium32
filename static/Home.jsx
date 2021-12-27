@@ -6,6 +6,7 @@ const {
   TableContainer, Table, TableHead, TableRow, TableCell, TableBody, 
   Typography,
   Select, MenuItem,
+  Slider,
 } = window.MaterialUI;
 
 class Home extends React.Component {
@@ -34,13 +35,25 @@ class Home extends React.Component {
     });
   }
   
-  render_dict(d) {
+  update_sun_state(d) {
+    var tank = this.state.tank || {};
+    var sun = tank.sun || {};
+    Object.assign(sun, d)
+    this.setState({tank:tank})
+  }
+  
+  render_cbody(d) {
     if (d==null) return null;
     return (
       <table style={{display:'inline-block'}}><tbody>
-        {Object.entries(d).map(x => (
-          <tr key={x[0]}><td>{x[0]}:</td><td>{x[1]}</td></tr>
-        ))}
+        <tr><td>Altitude:</td><td>{Math.round(d['altitude'])}&deg;</td></tr>
+        <tr><td>Azimuth:</td><td>{Math.round(d['azimuth'])}&deg;</td></tr>
+        {d['radiation'] ? (
+          <tr><td>Radiation:</td><td>{Math.round(d['radiation'])} w/m&sup2;</td></tr>
+        ) : null}
+        {d['fraction'] ? (
+          <tr><td>Full:</td><td>{Math.round(100*d['fraction'])}%</td></tr>
+        ) : null}
       </tbody></table>
     )
   }
@@ -53,6 +66,64 @@ class Home extends React.Component {
     fetch('/set_state', {method: 'post', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({state:v})})
     .then(response => response.json())
     .then(data => this.setState({tank:data, loading_tank:false}));
+  }
+
+  set_sun_state() {
+    $.postJSON('/set_sun', {sun:this.state.tank.sun})
+    .then(x => {
+      console.log('set_sun', x)
+    })
+  }
+  
+  render_sun_controls() {
+
+    console.log('this.state.tank', this.state.tank)
+  
+    return (
+      <table style={{width:'100%', marginLeft:'1em', marginTop:'1em', paddingRight:'1em'}}>
+        <tr>
+          <td style={{padding:'0 20%', textAlign:'center'}}>
+            <Icon style={{fontSize:'10em'}}>sunny</Icon>
+            <Slider
+              min={0}
+              max={1500}
+              value={Math.round(this.state.tank?.sun.radiation)}
+              getAriaValueText={(v) => v+' w/m&sup2;'}
+              marks={marks_radiation}
+              onChange={(e,v) => this.update_sun_state({radiation:v})}
+              onChangeCommitted={() => this.set_sun_state()}
+            />
+          </td>
+          <td style={{height:'20em'}}>
+            <Slider
+              min={-180}
+              max={180}
+              marks={marks}
+              value={Math.round(this.state.tank?.sun.altitude)}
+              getAriaValueText={(v) => v+'°'}
+              track={false}
+              orientation="vertical"
+              onChange={(e,v) => this.update_sun_state({altitude:v})}
+              onChangeCommitted={() => this.set_sun_state()}
+            />
+          </td>
+        </tr>
+        <tr>
+          <td width='100%'>
+            <Slider
+              min={-180}
+              max={180}
+              marks={marks}
+              value={Math.round(this.state.tank?.sun.azimuth)}
+              getAriaValueText={(v) => v+'°'}
+              track={false}
+              onChange={(e,v) => this.update_sun_state({azimuth:v})}
+              onChangeCommitted={() => this.set_sun_state()}
+            />
+          </td>
+        </tr>
+      </table>
+    )
   }
   
   render() {
@@ -87,6 +158,7 @@ class Home extends React.Component {
                     <MenuItem value={'full'}>Full Brightness</MenuItem>
                     <MenuItem value={'realtime'}>Realtime</MenuItem>
                     <MenuItem value={'sim_day'}>Simulate 24h</MenuItem>
+                    <MenuItem value={'manual'}>Manual</MenuItem>
                   </Select>
                 </TableCell>
               </TableRow>
@@ -116,17 +188,27 @@ class Home extends React.Component {
                 <TableCell>Leds:</TableCell>
                 <TableCell align="right">{this.state.tank?.num_leds}</TableCell>
               </TableRow>
-              <TableRow>
-                <TableCell>Sun:</TableCell>
-                <TableCell align="right">{this.render_dict(this.state.tank?.sun)}</TableCell>
-              </TableRow>
+              {this.state.tank?.state=='manual' ? (
+                <TableRow><TableCell colSpan={2} style={{paddingBottom:'0'}}>
+                    {this.render_sun_controls()}
+                </TableCell></TableRow>
+              ) : (
+                <TableRow>
+                  <TableCell>Sun:</TableCell>
+                  <TableCell align="right">
+                    {this.render_cbody(this.state.tank?.sun)}
+                  </TableCell>
+                </TableRow>
+              )}
               <TableRow>
                 <TableCell>Moon:</TableCell>
-                <TableCell align="right">{this.render_dict(this.state.tank?.moon)}</TableCell>
+                <TableCell align="right">
+                  {this.render_cbody(this.state.tank?.moon)}
+                </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>When:</TableCell>
-                <TableCell align="right">{this.state.tank?.when}</TableCell>
+                <TableCell align="right">{this.state.tank?.when} UTC</TableCell>
               </TableRow>
             </TableBody>
           </Table>
@@ -139,4 +221,20 @@ class Home extends React.Component {
   }
 }
 
+
+    const marks = []
+    for (let step = -180; step <= 180; step+=45) {
+      marks.push({
+        value: step,
+        label: step+'°',
+      })
+    }
+
+    const marks_radiation = []
+    for (let step = 0; step <= 1500; step+=1500) {
+      marks_radiation.push({
+        value: step,
+        label: step+' w/m²',
+      })
+    }
 

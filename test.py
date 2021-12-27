@@ -26,7 +26,8 @@ class TestAquarium32(unittest.TestCase):
 
     def test_datetime(self):
         tank = Aquarium32()
-        tank.update_leds(datetime(2021, 6, 21, 18, 0, 0, 0))
+        tank.update_positions(datetime(2021, 6, 21, 18, 0, 0, 0))
+        tank.update_leds()
 #        for i in range(24):
 #          for j in [0,15,30,45]:
 #            tank.main(datetime(2021, 6, 21, i, j, 0, 0))

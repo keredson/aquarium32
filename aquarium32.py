@@ -3,7 +3,6 @@ import collections, datetime, math, os, re, sys, time
 try: 
   import gc
   import machine
-  import neopixel
   import ujson as json
   ON_ESP32 = True
 except ImportError: 
@@ -25,7 +24,6 @@ DATE_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})')
 
 
 
-Color = collections.namedtuple('Color', 'r g b')
 
 class Aquarium32:
 
@@ -33,6 +31,9 @@ class Aquarium32:
     print('Aquarium32')
     self.last_ntp_check = 0
     
+    self.np = None
+    self.sun_color = util.Color(255,255,255)
+
     util.load_settings(self)
 
     self.lat, self.lng = util.DEFAULT_LAT, util.DEFAULT_LNG
@@ -41,7 +42,6 @@ class Aquarium32:
     self.country = None
     
     self.sun = None
-    self.sun_color = Color(255,255,255)
     self.moon = None
     self.when = None
     
@@ -49,13 +49,6 @@ class Aquarium32:
     self.clouds_3_hour_interval = []
     self.state = 'realtime'
 
-    #self.num_leds = 144 * 2
-    try:
-      self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
-    except NameError:
-      # not in micropython / on esp32
-      self.np = None
-    
     self.clear()
           
     
@@ -82,18 +75,12 @@ class Aquarium32:
   ntp_check = util.ntp_check
   locate = util.locate
          
-
-  def update_leds(self, now, skip_weather=None):
-    self.ntp_check()
-    self.update_weather()
+         
+  def update_positions(self, now):
     gc.collect()
-    
     m = DATE_RE.match(self.settings.sim_date) if self.settings.sim_date else None
     if m:
       now = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), now.hour, now.minute, now.second)      
-    
-    if skip_weather is None:
-      skip_weather = self.settings.skip_weather
     
     altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
     #print('altitude', altitude)
@@ -101,8 +88,6 @@ class Aquarium32:
     #print('azimuth', azimuth)
     radiation = pysolar.util.diffuse_underclear(self.lat, self.lng, now)
     #print('radiation', radiation)
-    leds = radiation / MAX_RADIATION * self.num_leds
-    #print('leds', leds)
     moon = suncalc.getMoonPosition(now, self.lat, self.lng)
     moon.update(suncalc.getMoonIllumination(now))
     self.when = now
@@ -120,14 +105,16 @@ class Aquarium32:
       'at', now, now.timestamp(), gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
       'sun', self.sun, 'moon', self.moon
     )
+
+  def update_leds(self, skip_weather=None):
+    sun = self.sun
+    moon = self.moon
+    moon_azimuth_degrees = math.degrees(moon['azimuth'])
+    print('moon_azimuth_degrees', moon_azimuth_degrees)
     
-    moon_altitude = moon['altitude']
-    moon_fraction = moon['fraction']
-    moon_azimuth = moon['azimuth']
-    del moon
-    
-    if radiation > 0:
-      sun_center = azimuth / 180 * self.num_leds
+    if sun['radiation'] > 0:
+      leds = sun['radiation'] / MAX_RADIATION * self.num_leds
+      sun_center = self.sun['azimuth'] / 180 * self.num_leds
       start = sun_center - leds/2
       stop = sun_center + leds/2
       if start < 0:
@@ -144,19 +131,19 @@ class Aquarium32:
       brightness = (0 for i in range(self.num_leds))
       
 
-    moon_brightness = max(0, math.sin(moon_altitude) * moon_fraction)
+    moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
     print('moon_brightness', moon_brightness)
-    moon_led = int(round(moon_azimuth / math.pi * self.num_leds + self.num_leds/2))
+    moon_led = int(round(moon['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
     moon_led = max(0, min(moon_led, self.num_leds-1))
     print('moon_led', moon_led)
         
     def f(i, v):
       r = max(0,v*self.sun_color.r)
-      g = max(0,v * min(self.sun_color.g, altitude*10))
-      b = max(0,v * min(self.sun_color.b, (altitude-10)*10))
+      g = max(0,v * min(self.sun_color.g, sun['altitude']*10))
+      b = max(0,v * min(self.sun_color.b, (sun['altitude']-10)*10))
 
       if moon_brightness and abs(moon_led-i)<3:
-        r = max(0, moon_brightness * min(255, 2*math.degrees(moon_altitude)))
+        r = max(0, moon_brightness * min(255, 2*math.degrees(moon['altitude'])))
         g = r
         b = max(0, min(255, moon_brightness*255))
 
@@ -177,11 +164,15 @@ class Aquarium32:
       return int(round(r)), int(round(g)), int(round(b))
     
     np = (f(i, v) for i, v in enumerate(brightness))
-
+    
+    print('self.np', self.np)
     if self.np:
       for i, color in enumerate(np):
         r, g, b = color
         self.np[i] = color
+        print(self.np[i], end='')
+      print()
+
       self.np.write()
 
   
@@ -192,7 +183,8 @@ class Aquarium32:
     for i in range(24*60//step_mins):
       if self.state != 'sim_day': break
       try:
-        self.update_leds(datetime.datetime.fromtimestamp(ts + i*60*step_mins), skip_weather=True)
+        self.update_positions(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
+        self.update_leds(skip_weather=True)
       except MemoryError as e:
         util.print_exception(e)
     self.state = orig_state
@@ -210,7 +202,17 @@ class Aquarium32:
     self.state = 'realtime'
     while True:
       if self.state != 'realtime': break
-      self.update_leds(datetime.datetime.now())
+      self.ntp_check()
+      #self.update_weather()
+      self.update_positions(datetime.datetime.now())
+      self.update_leds()
+      time.sleep(1)
+
+  def manual(self):
+    self.state = 'manual'
+    while True:
+      if self.state != 'manual': break
+      self.update_leds()
       time.sleep(1)
 
   def off(self):
