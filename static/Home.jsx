@@ -70,8 +70,9 @@ class Home extends React.Component {
 
   set_sun_state() {
     $.postJSON('/set_sun', {sun:this.state.tank.sun})
-    .then(x => {
-      console.log('set_sun', x)
+    .then(response => response.json())
+    .then(sun => {
+      this.update_sun_state(sun)
     })
   }
   
@@ -80,49 +81,35 @@ class Home extends React.Component {
     console.log('this.state.tank', this.state.tank)
   
     return (
-      <table style={{width:'100%', marginLeft:'1em', marginTop:'1em', paddingRight:'1em'}}>
-        <tr>
-          <td style={{padding:'0 20%', textAlign:'center'}}>
-            <Icon style={{fontSize:'10em'}}>sunny</Icon>
-            <Slider
-              min={0}
-              max={1500}
-              value={Math.round(this.state.tank?.sun.radiation)}
-              getAriaValueText={(v) => v+' w/m&sup2;'}
-              marks={marks_radiation}
-              onChange={(e,v) => this.update_sun_state({radiation:v})}
-              onChangeCommitted={() => this.set_sun_state()}
-            />
-          </td>
-          <td style={{height:'20em'}}>
-            <Slider
-              min={-180}
-              max={180}
-              marks={marks}
-              value={Math.round(this.state.tank?.sun.altitude)}
-              getAriaValueText={(v) => v+'°'}
-              track={false}
-              orientation="vertical"
-              onChange={(e,v) => this.update_sun_state({altitude:v})}
-              onChangeCommitted={() => this.set_sun_state()}
-            />
-          </td>
-        </tr>
-        <tr>
-          <td width='100%'>
-            <Slider
-              min={-180}
-              max={180}
-              marks={marks}
-              value={Math.round(this.state.tank?.sun.azimuth)}
-              getAriaValueText={(v) => v+'°'}
-              track={false}
-              onChange={(e,v) => this.update_sun_state({azimuth:v})}
-              onChangeCommitted={() => this.set_sun_state()}
-            />
-          </td>
-        </tr>
-      </table>
+      <div style={{padding:'0 1em 1em 1em'}}>
+        <Typography id="continuous-slider" gutterBottom>
+          Sun
+        </Typography>
+        <FormHelperText>Radiation: {Math.round(this.state.tank?.sun.radiation)} w/m&sup2;</FormHelperText>
+        <FormHelperText>Altitude</FormHelperText>
+        <Slider
+          min={-180}
+          max={180}
+          marks={marks}
+          value={Math.round(this.state.tank?.sun.altitude)}
+          getAriaValueText={(v) => v+'°'}
+          track={false}
+          onChange={(e,v) => this.update_sun_state({altitude:v})}
+          onChangeCommitted={() => this.set_sun_state()}
+        />
+        <br/>
+        <FormHelperText>Azimuth</FormHelperText>
+        <Slider
+          min={-180}
+          max={180}
+          marks={marks}
+          value={Math.round(this.state.tank?.sun.azimuth)}
+          getAriaValueText={(v) => v+'°'}
+          track={false}
+          onChange={(e,v) => this.update_sun_state({azimuth:v})}
+          onChangeCommitted={() => this.set_sun_state()}
+        />
+      </div>
     )
   }
   

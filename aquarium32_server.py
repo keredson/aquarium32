@@ -3,6 +3,7 @@ import uttpreact
 import datetime
 import json
 import util
+import pysolar.util
 
 
 def setup(tank):
@@ -43,8 +44,9 @@ def setup(tank):
   def set_state(req):
     sun = req.json().get('sun')
     if sun:
+      sun['radiation'] = pysolar.util.diffuse_underclear_from_altitude(sun['altitude'])
       tank.sun = sun
-      yield 'ok'
+      yield sun
     else:
       yield uttp.status(400)
 
@@ -70,6 +72,10 @@ def setup(tank):
     new_settings = req.json()
     if new_settings.get('sim_day')=='':
       new_settings['sim_day'] = None
+    if new_settings.get('light_span')=='':
+      new_settings['light_span'] = None
+    if 'light_span' in new_settings:
+      new_settings['light_span'] = int(new_settings['light_span'])
     with open('aquarium32_settings.json','w') as f:
       json.dump(new_settings, f)
     util.load_settings(tank)

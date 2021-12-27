@@ -23,6 +23,7 @@ SETTINGS_FIELDS = {
   'sun_color': None,
   'skip_weather': None,
   'sim_date': None,
+  'light_span': None,
 }
 
 Settings = collections.namedtuple('Settings', list(SETTINGS_FIELDS.keys()))
@@ -100,9 +101,9 @@ def load_settings(self):
           self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
   except OSError as e:
     print('aquarium32_settings.json not found, loading defaults')
-    self.settings = Settings(None,None,None,None,None,None)
+    self.settings = Settings(None,None,None,None,None,None,None)
   except Exception as e:
-    self.settings = Settings(None,None,None,None,None,None)
+    self.settings = Settings(None,None,None,None,None,None,None)
     print_exception(e)
   try:
     self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)

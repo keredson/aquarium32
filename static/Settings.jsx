@@ -101,6 +101,22 @@ class Settings extends React.Component {
 
           <p>
             <TextField
+              label={(<span style={{backgroundColor:this.state.light_span===this.state._orig_settings?.light_span ? '' : '#FFFF99'}}>Lighting Span (degrees)</span>)}
+              type="number"
+              value={this.state.light_span}
+              onChange={(e => this.setState({light_span:e.target.value}))}
+              InputLabelProps={{ shrink: true }}
+              placeholder='180'
+            />
+            <FormHelperText>
+              If your lights span the top or a single side, this should be 180°.
+              If your lights wrap around three sides, then 270°.
+              All four sides, 360°, etc.
+            </FormHelperText>
+          </p>
+
+          <p>
+            <TextField
               label={(<span style={{backgroundColor:this.state.sun_color===this.state._orig_settings?.sun_color ? '' : '#FFFF99'}}>Sun Color</span>)}
               value={this.state.sun_color}
               onChange={(e => this.setState({sun_color:e.target.value}))}

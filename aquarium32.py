@@ -61,6 +61,10 @@ class Aquarium32:
   def num_leds(self):
     return self.settings.num_leds or 144
     
+  @property
+  def light_span(self):
+    return self.settings.light_span or 180
+    
   def clear(self):
     if self.np:
       for i in range(self.num_leds):
@@ -103,18 +107,20 @@ class Aquarium32:
     }
     print(
       'at', now, now.timestamp(), gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
-      'sun', self.sun, 'moon', self.moon
     )
 
   def update_leds(self, skip_weather=None):
     sun = self.sun
     moon = self.moon
+    print(
+      'sun', self.sun, 'moon', self.moon
+    )
     moon_azimuth_degrees = math.degrees(moon['azimuth'])
     print('moon_azimuth_degrees', moon_azimuth_degrees)
     
     if sun['radiation'] > 0:
       leds = sun['radiation'] / MAX_RADIATION * self.num_leds
-      sun_center = self.sun['azimuth'] / 180 * self.num_leds
+      sun_center = self.sun['azimuth'] / self.light_span * self.num_leds + self.num_leds/2
       start = sun_center - leds/2
       stop = sun_center + leds/2
       if start < 0:
@@ -132,10 +138,8 @@ class Aquarium32:
       
 
     moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
-    print('moon_brightness', moon_brightness)
     moon_led = int(round(moon['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
     moon_led = max(0, min(moon_led, self.num_leds-1))
-    print('moon_led', moon_led)
         
     def f(i, v):
       r = max(0,v*self.sun_color.r)
@@ -165,13 +169,12 @@ class Aquarium32:
     
     np = (f(i, v) for i, v in enumerate(brightness))
     
-    print('self.np', self.np)
     if self.np:
       for i, color in enumerate(np):
         r, g, b = color
         self.np[i] = color
-        print(self.np[i], end='')
-      print()
+        #print(self.np[i], end='')
+      #print()
 
       self.np.write()
 
