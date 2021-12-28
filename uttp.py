@@ -116,6 +116,9 @@ class Route:
       elif 'io.TextIOWrapper' in repr(ret):
         while b:=ret.read(256):
           response.write(b)
+      elif 'io.BufferedReader' in repr(ret):
+        while b:=ret.read(256):
+          response.write(b)
       else: raise Exception('unknown response type:', ret)
 
 
@@ -209,10 +212,26 @@ run = DEFAULT.run
 run_daemon = DEFAULT.run_daemon
 
 
-def file(fn):
-  print('fn', fn)
+EXT_MIME_TYPES = {
+  'html':'text/html; charset=utf-8',
+  'jsx':'application/javascript',
+  'jpg':'image/jpeg',
+  'jpeg':'image/jpeg',
+}
+
+
+def file(fn, max_age=604800):
+  ext = None
+  if '.' in fn:
+    ext = fn[fn.index('.')+1:].lower()
+    print(fn, ext)
+  mime_type = EXT_MIME_TYPES.get(ext)
   try:
-    with open(fn) as f:
+    with open(fn,'rb') as f:
+      if mime_type:
+        yield header('Content-Type', mime_type)
+      if max_age:
+        yield header('Cache-Control', 'max-age=%i' % max_age)
       yield f
   except OSError:
     yield status(404)
