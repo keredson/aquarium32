@@ -214,7 +214,8 @@ run_daemon = DEFAULT.run_daemon
 
 EXT_MIME_TYPES = {
   'html':'text/html; charset=utf-8',
-  'jsx':'application/javascript',
+  'js':'application/javascript',
+  'jsx':'text/jsx',
   'jpg':'image/jpeg',
   'jpeg':'image/jpeg',
 }
