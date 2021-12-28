@@ -1,4 +1,4 @@
-import collections, datetime, math, os, re, sys, time
+import collections, datetime, math, os, random, re, sys, time
 
 try: 
   import gc
@@ -159,6 +159,12 @@ class Aquarium32:
       r = max(0,v*self.sun_color.r)
       g = max(0,v * min(self.sun_color.g, sun['altitude']*10))
       b = max(0,v * min(self.sun_color.b, (sun['altitude']-10)*10))
+
+      # stars
+      if sun['radiation'] < 0:
+        twinkle = random.random()*10 < 1
+        if twinkle:
+          r = g = b = int(random.random()*25)
 
       if moon_brightness and abs(moon_led-i)<3:
         r = max(0, moon_brightness * min(255, 2*math.degrees(moon['altitude'])))
