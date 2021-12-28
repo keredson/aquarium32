@@ -18,6 +18,7 @@ class Aquarium32 extends React.Component {
     this.state = {
       drawer_open: false,
       page: location.hash.substring(1) || 'home',
+      width: window.innerWidth,
     }
     window.addEventListener("hashchange", () => {
       this.setState({page: location.hash.substring(1) || 'home', drawer_open:false})
@@ -28,10 +29,17 @@ class Aquarium32 extends React.Component {
     location.hash = '#'+page
   }
   
+  componentDidMount() {
+    window.addEventListener('resize', () => this.setState({width: window.innerWidth}));
+  }
+  
   render() {
 
+    const always_open = this.state.width > 800;
+    const drawer_width = 200;
+
     const drawer = (
-      <div style={{minWidth:'240px'}}>
+      <div style={{width:drawer_width+'px'}}>
         <img src='/static/fish.jpeg' style={{width:'100%'}} />
         <List>
           <ListItem button onClick={() => this.nav_to('home')}>
@@ -68,10 +76,14 @@ class Aquarium32 extends React.Component {
             </Typography>
           </Toolbar>
         </AppBar>
-        <Drawer open={this.state.drawer_open} onClose={() => this.setState({drawer_open:false})}>
+        <Drawer 
+            open={this.state.drawer_open} 
+            onClose={() => this.setState({drawer_open:false})}
+            variant={always_open ? "permanent" : null}
+        >
           {drawer}
         </Drawer>
-        <div style={{margin: '12px', marginTop:'76px'}}>
+        <div style={{marginLeft: ((always_open ? drawer_width : 0) + 12)+'px', marginRight:'12px', marginTop:'76px'}}>
           {this.state.page=='home' ? (<Home />) : null}
           {this.state.page=='settings' ? (<Settings />) : null}
         </div>
