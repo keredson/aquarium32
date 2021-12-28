@@ -79,6 +79,8 @@ class Aquarium32:
   ntp_check = util.ntp_check
   locate = util.locate
          
+  def _calc_led_index(self, azimuth):
+    return azimuth / self.light_span * self.num_leds + self.num_leds/2
          
   def update_positions(self, now):
     gc.collect()
@@ -102,7 +104,7 @@ class Aquarium32:
     }
     self.moon = {
       'altitude':moon['altitude'],
-      'azimuth':moon['azimuth'],
+      'azimuth':math.degrees(moon['azimuth']),
       'fraction':moon['fraction'],
     }
     print(
@@ -115,12 +117,10 @@ class Aquarium32:
     print(
       'sun', self.sun, 'moon', self.moon
     )
-    moon_azimuth_degrees = math.degrees(moon['azimuth'])
-    print('moon_azimuth_degrees', moon_azimuth_degrees)
     
     if sun['radiation'] > 0:
       leds = sun['radiation'] / MAX_RADIATION * self.num_leds
-      sun_center = self.sun['azimuth'] / self.light_span * self.num_leds + self.num_leds/2
+      sun_center = self._calc_led_index(self.sun['azimuth'])
       start = sun_center - leds/2
       stop = sun_center + leds/2
       if start < 0:
@@ -138,7 +138,7 @@ class Aquarium32:
       
 
     moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
-    moon_led = int(round(moon['azimuth'] / math.pi * self.num_leds + self.num_leds/2))
+    moon_led = self._calc_led_index(self.moon['azimuth'])
     moon_led = max(0, min(moon_led, self.num_leds-1))
         
     def f(i, v):

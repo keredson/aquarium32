@@ -77,9 +77,6 @@ class Home extends React.Component {
   }
   
   render_sun_controls() {
-
-    console.log('this.state.tank', this.state.tank)
-  
     return (
       <div style={{padding:'0 1em 1em 1em'}}>
         <Typography id="continuous-slider" gutterBottom>
@@ -108,6 +105,61 @@ class Home extends React.Component {
           track={false}
           onChange={(e,v) => this.update_sun_state({azimuth:v})}
           onChangeCommitted={() => this.set_sun_state()}
+        />
+      </div>
+    )
+  }
+  
+  update_moon_state(d) {
+    var tank = this.state.tank || {};
+    var moon = tank.moon || {};
+    Object.assign(moon, d)
+    this.setState({tank:tank})
+  }
+
+  set_moon_state() {
+    $.postJSON('/set_moon', {moon:this.state.tank.moon})
+    .then(moon => {})
+  }
+
+  render_moon_controls() {
+    return (
+      <div style={{padding:'0 1em 1em 1em'}}>
+        <Typography id="continuous-slider" gutterBottom>
+          Moon
+        </Typography>
+        <FormHelperText>Phase</FormHelperText>
+        <Slider
+          min={0}
+          max={100}
+          marks={marks_moon}
+          value={Math.round(100*this.state.tank?.moon.fraction)}
+          onChange={(e,v) => this.update_moon_state({fraction:v/100})}
+          onChangeCommitted={() => this.set_moon_state()}
+        />
+        <br/>
+        <FormHelperText>Altitude</FormHelperText>
+        <Slider
+          min={-180}
+          max={180}
+          marks={marks}
+          value={Math.round(this.state.tank?.moon.altitude)}
+          getAriaValueText={(v) => v+'°'}
+          track={false}
+          onChange={(e,v) => this.update_moon_state({altitude:v})}
+          onChangeCommitted={() => this.set_moon_state()}
+        />
+        <br/>
+        <FormHelperText>Azimuth</FormHelperText>
+        <Slider
+          min={-180}
+          max={180}
+          marks={marks}
+          value={Math.round(this.state.tank?.moon.azimuth)}
+          getAriaValueText={(v) => v+'°'}
+          track={false}
+          onChange={(e,v) => this.update_moon_state({azimuth:v})}
+          onChangeCommitted={() => this.set_moon_state()}
         />
       </div>
     )
@@ -187,12 +239,18 @@ class Home extends React.Component {
                   </TableCell>
                 </TableRow>
               )}
-              <TableRow>
-                <TableCell>Moon:</TableCell>
-                <TableCell align="right">
-                  {this.render_cbody(this.state.tank?.moon)}
-                </TableCell>
-              </TableRow>
+              {this.state.tank?.state=='manual' ? (
+                <TableRow><TableCell colSpan={2} style={{paddingBottom:'0'}}>
+                    {this.render_moon_controls()}
+                </TableCell></TableRow>
+              ) : (
+                <TableRow>
+                  <TableCell>Moon:</TableCell>
+                  <TableCell align="right">
+                    {this.render_cbody(this.state.tank?.moon)}
+                  </TableCell>
+                </TableRow>
+              )}
               <TableRow>
                 <TableCell>When:</TableCell>
                 <TableCell align="right">{this.state.tank?.when} UTC</TableCell>
@@ -224,4 +282,12 @@ class Home extends React.Component {
         label: step+' w/m²',
       })
     }
+
+    const marks_moon = [
+      {value: 0, label: 'New'},
+      {value: 25, label: 'Crescent'},
+      {value: 50, label: 'Half'},
+      {value: 75, label: 'Gibbous'},
+      {value: 100, label: 'Full'},
+    ]
 

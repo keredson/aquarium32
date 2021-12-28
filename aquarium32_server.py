@@ -50,6 +50,15 @@ def setup(tank):
     else:
       yield uttp.status(400)
 
+  @uttp.post('/set_moon')
+  def set_state(req):
+    moon = req.json().get('moon')
+    if moon:
+      tank.moon = moon
+      yield moon
+    else:
+      yield uttp.status(400)
+
   @uttp.get('/status.json')
   def status(req):
     yield {
