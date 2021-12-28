@@ -9,6 +9,7 @@ const {
   Slider,
 } = window.MaterialUI;
 
+
 class Home extends React.Component {
 
   constructor(props) {
