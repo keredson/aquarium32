@@ -5,16 +5,19 @@ led_thick = 5;
 tank_lip_thick = 2.7;
 clip_width = 10;
 clip_depth = 5;
+angle = 75;
 
 
-module clip() {
+module clip(skip_holder=false) {
     difference() {
         union() {
-            cube([led_width+T*2, led_thick+2*T, clip_width]);
+            if(!skip_holder) {
+                cube([led_width+T*2, led_thick+2*T, clip_width]);
+            }
             
-            rotate([0,0,45])
-            translate([1,0,clip_width/2])
-            cube([tank_lip_thick+2*T+2, clip_depth+2*T, clip_width], center=true);
+            rotate([0,0,angle])
+            translate([-1,0,clip_width/2])
+            cube([tank_lip_thick+2*T, clip_depth+2*T, clip_width], center=true);
             
             
         }
@@ -26,8 +29,8 @@ module clip() {
         cube([10, 10, 100], center=true);
 
 
-        rotate([0,0,45])
-        translate([0,-T,clip_width/2])
+        rotate([0,0,angle])
+        translate([-1,-T,clip_width/2])
         cube([tank_lip_thick, clip_depth+2*T, 100], center=true);
 
     }
@@ -36,9 +39,15 @@ module clip() {
 for (i=[0:3]) {
     for (j=[0,1]) {
         for (k=[0:2]) {
-            translate([j*10 + k*30,j*14 + i*22,0])
+            translate([j*10 + k*28,j*12 + i*19,0])
             rotate([0,0,j*180])
             clip();
         }
     }
+}
+
+for (k=[0:7]) {
+    translate([k*10,-11,0])
+    rotate([0,0,-angle])
+    clip(skip_holder=true);
 }
