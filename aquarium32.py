@@ -36,7 +36,7 @@ class Aquarium32:
 
     util.load_settings(self)
 
-    self.lat, self.lng = util.DEFAULT_LAT, util.DEFAULT_LNG
+    self.lat, self.lng = None, None
     self.city = None
     self.region = None
     self.country = None
@@ -58,12 +58,26 @@ class Aquarium32:
       
   
   @property
+  def latitude(self):
+    return util.DEFAULT_LAT if self.lat is None else self.lat
+    
+  @property
+  def longitude(self):
+    return util.DEFAULT_LNG if self.lng is None else self.lng
+    
+  @property
   def num_leds(self):
     return self.settings.num_leds or 144
     
   @property
   def light_span(self):
     return self.settings.light_span or 180
+    
+  def calc_cloudiness(self, now):
+    return 1
+    if not self.clouds_3_hour_interval: return 0
+    cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
+    cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
     
   def clear(self):
     if self.np:
@@ -88,13 +102,13 @@ class Aquarium32:
     if m:
       now = datetime.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), now.hour, now.minute, now.second)      
     
-    altitude = pysolar.solar.get_altitude(self.lat, self.lng, now)
+    altitude = pysolar.solar.get_altitude(self.latitude, self.longitude, now)
     #print('altitude', altitude)
-    azimuth = pysolar.solar.get_azimuth(self.lat, self.lng, now) - 90
+    azimuth = pysolar.solar.get_azimuth(self.latitude, self.longitude, now) - 90
     #print('azimuth', azimuth)
-    radiation = pysolar.util.diffuse_underclear(self.lat, self.lng, now)
+    radiation = pysolar.util.diffuse_underclear(self.latitude, self.longitude, now)
     #print('radiation', radiation)
-    moon = suncalc.getMoonPosition(now, self.lat, self.lng)
+    moon = suncalc.getMoonPosition(now, self.latitude, self.longitude)
     moon.update(suncalc.getMoonIllumination(now))
     self.when = now
     self.sun = {
@@ -111,7 +125,7 @@ class Aquarium32:
       'at', now, now.timestamp(), gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
     )
 
-  def update_leds(self, skip_weather=None):
+  def update_leds(self, now, skip_weather=None):
     sun = self.sun
     moon = self.moon
     print(
@@ -141,7 +155,7 @@ class Aquarium32:
     moon_led = self._calc_led_index(self.moon['azimuth'])
     moon_led = max(0, min(moon_led, self.num_leds-1))
         
-    def f(i, v):
+    def f(i, v, cloudiness):
       r = max(0,v*self.sun_color.r)
       g = max(0,v * min(self.sun_color.g, sun['altitude']*10))
       b = max(0,v * min(self.sun_color.b, (sun['altitude']-10)*10))
@@ -152,12 +166,11 @@ class Aquarium32:
         b = max(0, min(255, moon_brightness*255))
 
       # clouds
-      if not skip_weather and self.clouds_3_hour_interval:
-        cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
-        cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
-        cloud_step = now.timestamp()/10
-        cloud_wave = (1+math.sin((cloud_step+i)/16))/2
+      if not skip_weather:
+        cloud_step = now.timestamp()
+        cloud_wave = (1+math.sin((cloud_step+i)/12))/2
         cloud_factor = 1 - cloudiness * cloud_wave
+        #print('cloud_factor', cloud_factor)
         
         # cap at 95% reduction
         cloud_factor = .05 + .95*cloud_factor
@@ -167,7 +180,9 @@ class Aquarium32:
 
       return int(round(r)), int(round(g)), int(round(b))
     
-    np = (f(i, v) for i, v in enumerate(brightness))
+    cloudiness = self.calc_cloudiness(now)
+    print('cloudiness',cloudiness)
+    np = (f(i, v, cloudiness) for i, v in enumerate(brightness))
     
     if self.np:
       for i, color in enumerate(np):
@@ -187,7 +202,7 @@ class Aquarium32:
       if self.state != 'sim_day': break
       try:
         self.update_positions(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
-        self.update_leds(skip_weather=True)
+        self.update_leds(None, skip_weather=True)
       except MemoryError as e:
         util.print_exception(e)
     self.state = orig_state
@@ -206,16 +221,17 @@ class Aquarium32:
     while True:
       if self.state != 'realtime': break
       self.ntp_check()
-      #self.update_weather()
-      self.update_positions(datetime.datetime.now())
-      self.update_leds()
+      self.update_weather()
+      now = datetime.datetime.now()
+      self.update_positions(now)
+      self.update_leds(now)
       time.sleep(1)
 
   def manual(self):
     self.state = 'manual'
     while True:
       if self.state != 'manual': break
-      self.update_leds()
+      self.update_leds(datetime.datetime.now())
       time.sleep(1)
 
   def off(self):
