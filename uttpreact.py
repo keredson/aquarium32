@@ -33,6 +33,7 @@ def init(jsx_path='static'):
 @uttp.get(r'/__uttpreact__')
 def __uttpreact__(req):
   yield uttp.header('Content-Type', 'text/javascript')
+  yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
   yield '''
     function __uttpreact_onload__(start) {
       console.log('__uttpreact_onload__')
