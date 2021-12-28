@@ -69,7 +69,7 @@ class Settings extends React.Component {
     return (
       <div>
 
-        <Typography variant="h1" style={{fontSize:'3rem', lineHeight:'2'}}>
+        <Typography variant="h3">
           Settings
           {this.state._loading ? (
             <LinearProgress />

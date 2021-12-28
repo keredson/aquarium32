@@ -172,7 +172,7 @@ class Home extends React.Component {
     return (
       <div>
 
-        <Typography variant="h4">
+        <Typography variant="h3">
           Tank
           {this.state.loading_tank ? (
             <LinearProgress />

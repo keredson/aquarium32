@@ -23,13 +23,7 @@ def setup(tank):
   @uttp.get('/static/<fn>')
   def static_file(req, fn):
     fn = 'static/'+fn
-    try:
-      with open(fn) as f:
-        if fn.endswith('.jsx'):
-          yield uttp.header('Content-Type', 'application/javascript')
-        yield f
-    except OSError:
-      yield uttp.status(404)
+    yield from uttp.file(fn)
 
   @uttp.post('/set_state')
   def set_state(req):

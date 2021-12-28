@@ -32,14 +32,13 @@ class Aquarium32 extends React.Component {
 
     const drawer = (
       <div style={{minWidth:'240px'}}>
-        <div style={{height:'64px'}} />
-        <Divider />
+        <img src='/static/fish.jpeg' style={{width:'100%'}} />
         <List>
           <ListItem button onClick={() => this.nav_to('home')}>
             <ListItemIcon>
               <Icon>home</Icon>
             </ListItemIcon>
-            <ListItemText primary={'Home'} />
+            <ListItemText primary={'Tank'} />
           </ListItem>
           <ListItem button onClick={() => this.nav_to('settings')}>
             <ListItemIcon>
