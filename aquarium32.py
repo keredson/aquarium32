@@ -104,7 +104,7 @@ class Aquarium32:
     
     altitude = pysolar.solar.get_altitude(self.latitude, self.longitude, now)
     #print('altitude', altitude)
-    azimuth = pysolar.solar.get_azimuth(self.latitude, self.longitude, now) - 90
+    azimuth = pysolar.solar.get_azimuth(self.latitude, self.longitude, now) - 180
     #print('azimuth', azimuth)
     radiation = pysolar.util.diffuse_underclear(self.latitude, self.longitude, now)
     #print('radiation', radiation)
@@ -194,7 +194,7 @@ class Aquarium32:
       self.np.write()
 
   
-  def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 5):
+  def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 10):
     orig_state = self.state
     self.state = 'sim_day'
     ts = start.timestamp()
