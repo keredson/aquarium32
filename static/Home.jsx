@@ -7,6 +7,7 @@ const {
   Typography,
   Select, MenuItem,
   Slider,
+  FormHelperText
 } = window.MaterialUI;
 
 
@@ -118,9 +119,20 @@ class Home extends React.Component {
     this.setState({tank:tank})
   }
 
+  update_weather_state(d) {
+    var tank = this.state.tank || {};
+    Object.assign(tank, d)
+    this.setState({tank:tank})
+  }
+
   set_moon_state() {
     $.postJSON('/set_moon', {moon:this.state.tank.moon})
-    .then(moon => {})
+    .then(() => {})
+  }
+
+  set_weather_state() {
+    $.postJSON('/set_weather', {cloudiness:this.state.tank.cloudiness})
+    .then(() => {})
   }
 
   render_moon_controls() {
@@ -166,6 +178,26 @@ class Home extends React.Component {
     )
   }
   
+  render_weather_controls() {
+    return (
+      <div style={{padding:'0 1em 1em 1em'}}>
+        <Typography id="continuous-slider" gutterBottom>
+          Cloudiness
+        </Typography>
+        <div style={{marginLeft:'2em', marginRight:'2em'}}>
+          <Slider
+            min={0}
+            max={100}
+            marks={marks_weather}
+            value={Math.round(100*this.state.tank?.cloudiness)}
+            onChange={(e,v) => this.update_weather_state({cloudiness:v/100})}
+            onChangeCommitted={() => this.set_weather_state()}
+          />
+        </div>
+      </div>
+    )
+  }
+  
   render() {
 
     console.log('tank', this.state.tank)
@@ -202,32 +234,6 @@ class Home extends React.Component {
                   </Select>
                 </TableCell>
               </TableRow>
-              <TableRow>
-                <TableCell>Last Weather Update:</TableCell>
-                <TableCell align="right">{this.state.tank?.last_weather_update}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>GPS:</TableCell>
-                <TableCell align="right">{this.state.tank ? (
-                  <span>{this.state.tank.lat}, {this.state.tank.lng}</span>
-                ) : null}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>City:</TableCell>
-                <TableCell align="right">{this.state.tank?.city}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Region:</TableCell>
-                <TableCell align="right">{this.state.tank?.region}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Country:</TableCell>
-                <TableCell align="right">{this.state.tank?.country}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Leds:</TableCell>
-                <TableCell align="right">{this.state.tank?.num_leds}</TableCell>
-              </TableRow>
               {this.state.tank?.state=='manual' ? (
                 <TableRow><TableCell colSpan={2} style={{paddingBottom:'0'}}>
                     {this.render_sun_controls()}
@@ -252,6 +258,38 @@ class Home extends React.Component {
                   </TableCell>
                 </TableRow>
               )}
+              {this.state.tank?.state=='manual' ? (
+                <TableRow><TableCell colSpan={2} style={{paddingBottom:'0'}}>
+                    {this.render_weather_controls()}
+                </TableCell></TableRow>
+              ) : (
+                <TableRow>
+                  <TableCell>Cloudiness:</TableCell>
+                  <TableCell align="right">{this.state.tank?.cloudiness}</TableCell>
+                </TableRow>
+              )}
+              <TableRow>
+                <TableCell>GPS:</TableCell>
+                <TableCell align="right">{this.state.tank ? (
+                  <span>{this.state.tank.lat}, {this.state.tank.lng}</span>
+                ) : null}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>City:</TableCell>
+                <TableCell align="right">{this.state.tank?.city}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Region:</TableCell>
+                <TableCell align="right">{this.state.tank?.region}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Country:</TableCell>
+                <TableCell align="right">{this.state.tank?.country}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Leds:</TableCell>
+                <TableCell align="right">{this.state.tank?.num_leds}</TableCell>
+              </TableRow>
               <TableRow>
                 <TableCell>When:</TableCell>
                 <TableCell align="right">{this.state.tank?.when} UTC</TableCell>
@@ -290,5 +328,10 @@ class Home extends React.Component {
       {value: 50, label: 'Half'},
       {value: 75, label: 'Gibbous'},
       {value: 100, label: 'Full'},
+    ]
+
+    const marks_weather = [
+      {value: 0, label: 'Sunny'},
+      {value: 100, label: 'Overcast'},
     ]
 

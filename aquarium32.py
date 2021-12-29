@@ -31,6 +31,7 @@ class Aquarium32:
     
     self.np = None
     self.sun_color = util.Color(255,255,255)
+    self._cloudiness = 0
 
     util.load_settings(self)
 
@@ -76,10 +77,11 @@ class Aquarium32:
     return self.settings.max_radiation or 1500
     
   def calc_cloudiness(self, now):
-    return 1
+    if self.state=='manual': return self._cloudiness
     if not self.clouds_3_hour_interval: return 0
     cloud_i = int((now.timestamp() - self.last_weather_update)/60/60/3)
     cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
+    return cloudiness
     
   def clear(self):
     if self.np:

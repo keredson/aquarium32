@@ -54,11 +54,19 @@ def setup(tank):
     else:
       yield uttp.status(400)
 
+  @uttp.post('/set_weather')
+  def set_state(req):
+    cloudiness = req.json().get('cloudiness')
+    if cloudiness:
+      tank._cloudiness = float(cloudiness)
+      yield {}
+    else:
+      yield uttp.status(400)
+
   @uttp.get('/status.json')
   def status(req):
     yield {
-      'clouds': None,
-      'last_weather_update': str(datetime.datetime.fromtimestamp(tank.last_weather_update)) if tank.last_weather_update else None,
+      'cloudiness': tank.calc_cloudiness(datetime.datetime.now()),
       'lat': tank.lat,
       'lng': tank.lng,
       'city': tank.city,
