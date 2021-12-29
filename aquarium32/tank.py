@@ -23,7 +23,7 @@ DATE_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})')
 
 
 
-class Aquarium32:
+class Tank:
 
   def __init__(self):
     print('Aquarium32')

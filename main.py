@@ -25,38 +25,12 @@ if ON_ESP32:
   print("ESP OK", wlan.ifconfig())
 
 
-try:
-  # pre-load all imports so they don't OOM when aquarium32 uses them
-  if ON_ESP32: print('mem_free at start', gc.mem_free())
-  import uttp
-  if ON_ESP32: print('mem_free after uttp', gc.mem_free())
-  import pysolar.solar
-  if ON_ESP32: print('mem_free after pysolar.solar', gc.mem_free())
-  import pysolar.util
-  if ON_ESP32: print('mem_free after pysolar.util', gc.mem_free())
-  import suncalc
-  if ON_ESP32: print('mem_free after suncalc', gc.mem_free())
-  import util
-  if ON_ESP32: print('mem_free after util', gc.mem_free())
-  gc.collect()
-  if ON_ESP32: print('mem_free after collect', gc.mem_free())
-  import aquarium32
-  if ON_ESP32: print('mem_free after aquarium32', gc.mem_free())
-  gc.collect()
-  import aquarium32_server
-  if ON_ESP32: print('mem_free after aquarium32_server', gc.mem_free())
-except MemoryError as e:
-  print(e)
-  sys.print_exception(e)
-  #time.sleep(5)
-  # try again
-  machine.reset()
+import aquarium32
 
-
-tank = aquarium32.Aquarium32()
+tank = aquarium32.Tank()
 tank.locate()
-aquarium32_server.setup(tank)
-uttp.run_daemon(port=80 if ON_ESP32 else 8080)
-#uttp.run(port=80 if ON_ESP32 else 8080)
+aquarium32.server.setup(tank)
+aquarium32.server.run_daemon(port=80 if ON_ESP32 else 8080)
+#aquarium32.server.run(port=80 if ON_ESP32 else 8080)
 tank.main()
 

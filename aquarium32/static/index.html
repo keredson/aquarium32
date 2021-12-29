@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Aquarium32</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.16.6/babel.min.js"></script>
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+
+    <script src="https://unpkg.com/@material-ui/core@4.11.0/umd/material-ui.production.min.js"></script>
+
+    <script src="/__uttpreact__"></script>
+    <script src="/static/aquarium32.js"></script>
+    
+    <script>
+      function start() {
+        ReactDOM.render(
+          React.createElement(Aquarium32),
+          document.getElementById('__body__')
+        )
+      }
+    </script>
+    
+    <style>
+      p.MuiTypography-body1 {
+        margin: 1em 0em !important;
+      }
+      body {background-color: #f8f8f8;}
+    </style>
+    
+  </head>
+  <body onload="start()" style="margin:0">
+    <div id='__body__'>
+      Loading...
+    </div>
+  </body>
+</html>
+

@@ -97,6 +97,11 @@ def setup(tank):
   def settings(req):
     yield {k:getattr(tank.settings, k) for k in util.SETTINGS_FIELDS.keys()}
      
+def run(host='0.0.0.0', port=80):
+  return uttp.run(host=host, port=port)
+
+def run_daemon(host='0.0.0.0', port=80):
+  return uttp.run_daemon(host=host, port=port)
   
   #uttp.run_daemon()
   #uttp.run()
