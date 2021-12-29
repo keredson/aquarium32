@@ -20,3 +20,6 @@ install: $(OBJS)
 clean:
 	rm -r $(OBJ)
 
+shell:
+	picocom $(PORT) -b115200
+
