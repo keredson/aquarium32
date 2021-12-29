@@ -77,10 +77,14 @@ class Response:
       self.send_header(header(k, v))
 
   def start(self, status):
-    status_line = '↳ HTTP/1.1 %i %s\r\n' % (status.code, status.reason)
-    self.f.write(status_line.encode())
-    print(status_line.strip(), '<=', self.handled_by.original_pattern if self.handled_by else '(not handled)')
+    self.started_at = time.ticks_ms()
+    self.status_line = '↳ HTTP/1.1 %i %s\r\n' % (status.code, status.reason)
+    self.f.write(self.status_line.encode())
     self.sent_status = True
+  
+  def end(self):
+    took_ms = time.ticks_ms() - self.started_at
+    print(self.status_line.strip(), '<=', self.handled_by.original_pattern if self.handled_by else '(not handled)', 'in %ims' % took_ms)
   
 
 
@@ -123,6 +127,7 @@ class Route:
         while b:=ret.read(256):
           response.write(b)
       else: raise Exception('unknown response type:', ret)
+    response.end()
 
 
 class App:
