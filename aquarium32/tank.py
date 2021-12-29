@@ -204,7 +204,7 @@ class Tank:
       self.np.write()
 
   
-  def sim_day(self, start = None, step_mins = 30):
+  def sim_day(self, start = None, step_mins = 10):
     if start is None:
       start = datetime.datetime.now()
     ts = start.timestamp()
