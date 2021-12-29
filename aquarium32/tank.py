@@ -13,7 +13,7 @@ import pysolar.solar
 import pysolar.util
 import suncalc
 import uttp
-import util
+from . import util
 
 
 

@@ -2,7 +2,7 @@ import uttp
 import uttp.react
 import datetime
 import json
-import util
+from . import util
 import pysolar.util
 
 

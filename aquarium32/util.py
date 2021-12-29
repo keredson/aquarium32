@@ -4,12 +4,14 @@ try:
   import ntptime
   import ujson as json
   import neopixel
+  from . import urequests as requests
   ON_ESP32 = True
 except ModuleNotFoundError: 
   ON_ESP32 = False
   import json
+  import requests
 import time
-import urequests as requests
+
 
 
 NTP_CHECK_INTERVAL_SECONDS = 60*60*24*7

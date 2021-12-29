@@ -29,7 +29,7 @@ try:
   import suncalc
   gc.collect()
   print('mem_free after suncalc', mem_free())
-  import util
+  from . import util
   gc.collect()
   print('mem_free after util', mem_free())
   gc.collect()
