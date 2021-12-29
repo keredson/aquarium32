@@ -265,7 +265,7 @@ class Tank extends React.Component {
               ) : (
                 <TableRow>
                   <TableCell>Cloudiness:</TableCell>
-                  <TableCell align="right">{this.state.tank?.cloudiness}</TableCell>
+                  <TableCell align="right">{Math.round(this.state.tank?.cloudiness * 100)}%</TableCell>
                 </TableRow>
               )}
               <TableRow>
