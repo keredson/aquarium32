@@ -32,7 +32,7 @@ def init(jsx_path='static', serve_root='/static'):
 @uttp.get(r'/__uttpreact__')
 def __uttpreact__(req):
   yield uttp.header('Content-Type', 'text/javascript')
-#  yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
+  yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
   yield '''
     class ___UTTPReact_Stub__ extends React.Component {
       constructor(props) {
@@ -67,22 +67,4 @@ def __uttpreact__(req):
       }
     ''' % (k, k, v)
   
-@uttp.get(r'/__uttpreact_orig__')
-def __uttpreact__(req):
-  yield uttp.header('Content-Type', 'text/javascript')
-#  yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
-  yield '''
-    function __uttpreact_onload__(start) {
-      console.log('__uttpreact_onload__')
-  '''
-  yield 'var all_classes = ' + json.dumps(list(CLASS_MAP.keys()))
-  yield '''
-      if (all_classes.every(e => this[e])) {
-        console.log('__uttpreact__: all classes loaded')
-        start()
-      } else {
-        setTimeout(() => __uttpreact_onload__(start), 100)
-      }
-    };
-  '''
 

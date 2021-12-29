@@ -17,6 +17,7 @@ def setup(tank):
 
   @uttp.get('/')
   def index(req):
+    yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
     with open('static/index.html') as f:
       yield f
 
