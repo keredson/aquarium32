@@ -126,7 +126,7 @@ class Aquarium32:
       'fraction':moon['fraction'],
     }
     print(
-      'postion:', (self.latitude, self.longitude), 'at:', now, 'free mem: %ib'%gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
+      'state', self.state, 'postion:', (self.latitude, self.longitude), 'at:', now, 'free mem: %ib'%gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
     )
 
   def update_leds(self, now, skip_weather=None):
@@ -204,18 +204,19 @@ class Aquarium32:
       self.np.write()
 
   
-  def sim_day(self, start = datetime.datetime(2021,9,20,2,15,0), step_mins = 10):
-    orig_state = self.state
-    self.state = 'sim_day'
+  def sim_day(self, start = None, step_mins = 30):
+    if start is None:
+      start = datetime.datetime.now()
     ts = start.timestamp()
     for i in range(24*60//step_mins):
       if self.state != 'sim_day': break
       try:
-        self.update_positions(datetime.datetime.fromtimestamp(ts + i*60*step_mins))
-        self.update_leds(None, skip_weather=True)
+        when = datetime.datetime.fromtimestamp(ts + i*60*step_mins)
+        self.update_positions(when)
+        self.update_leds(when, skip_weather=True)
       except MemoryError as e:
         util.print_exception(e)
-    self.state = orig_state
+    self.state = 'realtime'
   
   
   def main(self):
@@ -227,7 +228,6 @@ class Aquarium32:
       time.sleep(1)
     
   def realtime(self):
-    self.state = 'realtime'
     while True:
       if self.state != 'realtime': break
       self.ntp_check()
@@ -238,21 +238,18 @@ class Aquarium32:
       time.sleep(1)
 
   def manual(self):
-    self.state = 'manual'
     while True:
       if self.state != 'manual': break
       self.update_leds(datetime.datetime.now())
       time.sleep(1)
 
   def off(self):
-    self.state = 'off'
     self.clear()
     while True:
       if self.state != 'off': break
       time.sleep(1)
 
   def full(self):
-    self.state = 'full'
     if self.np:
       for i in range(self.num_leds):
         self.np[i] = (255,255,255)
