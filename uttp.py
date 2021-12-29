@@ -119,6 +119,9 @@ class Route:
       elif 'io.BufferedReader' in repr(ret):
         while b:=ret.read(256):
           response.write(b)
+      elif 'io.FileIO' in repr(ret):
+        while b:=ret.read(256):
+          response.write(b)
       else: raise Exception('unknown response type:', ret)
 
 
