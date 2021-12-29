@@ -16,7 +16,7 @@ module clip(skip_holder=false) {
             }
             
             rotate([0,0,angle])
-            translate([-1,0,clip_width/2])
+            translate([-1,-4,clip_width/2])
             cube([tank_lip_thick+2*T, clip_depth+2*T, clip_width], center=true);
             
             
@@ -30,24 +30,25 @@ module clip(skip_holder=false) {
 
 
         rotate([0,0,angle])
-        translate([-1,-T,clip_width/2])
+        translate([-1,-T-4,clip_width/2])
         cube([tank_lip_thick, clip_depth+2*T, 100], center=true);
 
     }
 }
 
-for (i=[0:3]) {
+for (i=[0:2]) {
     for (j=[0,1]) {
         for (k=[0:2]) {
-            translate([j*10 + k*28,j*12 + i*19,0])
+            translate([j*10 + k*30,j*12 + i*20,0])
             rotate([0,0,j*180])
+            mirror([j,0,0])
             clip();
         }
     }
 }
 
 for (k=[0:7]) {
-    translate([k*10,-11,0])
+    translate([k*12+4,-9,0])
     rotate([0,0,-angle])
     clip(skip_holder=true);
 }
