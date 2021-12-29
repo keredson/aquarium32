@@ -9,6 +9,8 @@ import json
 if hasattr(time, 'ticks_ms'): _ticks_ms = time.ticks_ms
 else: _ticks_ms = lambda: int(time.time() * 1000)
 
+BUFFER_SIZE = 128
+
 class Request:
 
   def __init__(self, app, f):
@@ -121,13 +123,13 @@ class Route:
         response._pre_write()
         json.dump(ret, f)
       elif 'io.TextIOWrapper' in repr(ret):
-        while b:=ret.read(256):
+        while b:=ret.read(BUFFER_SIZE):
           response.write(b)
       elif 'io.BufferedReader' in repr(ret):
-        while b:=ret.read(256):
+        while b:=ret.read(BUFFER_SIZE):
           response.write(b)
       elif 'io.FileIO' in repr(ret):
-        while b:=ret.read(256):
+        while b:=ret.read(BUFFER_SIZE):
           response.write(b)
       else: raise Exception('unknown response type:', ret)
     response.end()

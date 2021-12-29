@@ -53,9 +53,9 @@ def __uttpreact__(req):
       render() {
         if (window[this.name]==this.constructor) {
           setTimeout(() => this.setState({}), 100)
-          return null
+          return React.createElement(window.MaterialUI.CircularProgress)
         }
-        else return React.createElement(window[this.name], this.props)
+        else return React.createElement(window[this.name], this.props, this.children)
       }
     }
   '''

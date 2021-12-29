@@ -126,14 +126,14 @@ class Aquarium32:
       'fraction':moon['fraction'],
     }
     print(
-      'at', now, now.timestamp(), gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
+      'postion:', (self.latitude, self.longitude), 'at:', now, 'free:', gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
     )
 
   def update_leds(self, now, skip_weather=None):
     sun = self.sun
     moon = self.moon
     print(
-      'sun', self.sun, 'moon', self.moon
+      'sun:', self.sun, 'moon:', self.moon
     )
     
     if sun['radiation'] > 0:

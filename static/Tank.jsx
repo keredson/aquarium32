@@ -11,7 +11,7 @@ const {
 } = window.MaterialUI;
 
 
-class Home extends React.Component {
+class Tank extends React.Component {
 
   constructor(props) {
     super(props)
@@ -269,22 +269,17 @@ class Home extends React.Component {
                 </TableRow>
               )}
               <TableRow>
-                <TableCell>GPS:</TableCell>
-                <TableCell align="right">{this.state.tank ? (
-                  <span>{this.state.tank.lat}, {this.state.tank.lng}</span>
-                ) : null}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>City:</TableCell>
-                <TableCell align="right">{this.state.tank?.city}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Region:</TableCell>
-                <TableCell align="right">{this.state.tank?.region}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Country:</TableCell>
-                <TableCell align="right">{this.state.tank?.country}</TableCell>
+                <TableCell>Location:</TableCell>
+                <TableCell align="right">
+                  {this.state.tank ? (
+                    <div>
+                      <div><a target='_blank' href={'https://www.google.com/maps/@'+this.state.tank.lat+','+this.state.tank.lng}>
+                        {this.state.tank.lat}, {this.state.tank.lng}
+                      </a></div>
+                      <div>{this.state.tank.city} {this.state.tank.region}, {this.state.tank.country}</div>
+                    </div>
+                  ) : "Unknown"}
+              </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Leds:</TableCell>

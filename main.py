@@ -27,15 +27,15 @@ if ON_ESP32:
 
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them
-  if ON_ESP32: print('mem_free after wifimgr', gc.mem_free())
+  if ON_ESP32: print('mem_free at start', gc.mem_free())
+  import uttp
+  if ON_ESP32: print('mem_free after uttp', gc.mem_free())
   import pysolar.solar
   if ON_ESP32: print('mem_free after pysolar.solar', gc.mem_free())
   import pysolar.util
   if ON_ESP32: print('mem_free after pysolar.util', gc.mem_free())
   import suncalc
   if ON_ESP32: print('mem_free after suncalc', gc.mem_free())
-  import uttp
-  if ON_ESP32: print('mem_free after uttp', gc.mem_free())
   import util
   if ON_ESP32: print('mem_free after util', gc.mem_free())
   gc.collect()

@@ -17,11 +17,11 @@ class Aquarium32 extends React.Component {
     console.log('location.hash', location.hash)
     this.state = {
       drawer_open: false,
-      page: location.hash.substring(1) || 'home',
+      page: location.hash.substring(1) || 'tank',
       width: window.innerWidth,
     }
     window.addEventListener("hashchange", () => {
-      this.setState({page: location.hash.substring(1) || 'home', drawer_open:false})
+      this.setState({page: location.hash.substring(1) || 'tank', drawer_open:false})
     }, false);
   }
   
@@ -37,18 +37,20 @@ class Aquarium32 extends React.Component {
 
     const always_open = this.state.width > 800;
     const drawer_width = 200;
+    
+    const page = this.state.page || 'tank';
 
     const drawer = (
       <div style={{width:drawer_width+'px'}}>
-        <img src='/static/fish.jpeg' style={{width:'100%'}} />
+        <img src='/static/fish.jpeg' style={{width:'100%', minHeight:'130px'}} />
         <List>
-          <ListItem button onClick={() => this.nav_to('home')}>
+          <ListItem button onClick={() => this.nav_to('')} style={{backgroundColor: page=='tank' ? '#f7f7f7' : null}}>
             <ListItemIcon>
-              <Icon>home</Icon>
+              <Icon>tank</Icon>
             </ListItemIcon>
             <ListItemText primary={'Tank'} />
           </ListItem>
-          <ListItem button onClick={() => this.nav_to('settings')}>
+          <ListItem button onClick={() => this.nav_to('settings')} style={{backgroundColor: page=='settings' ? '#f7f7f7' : null}}>
             <ListItemIcon>
               <Icon>settings</Icon>
             </ListItemIcon>
@@ -71,7 +73,7 @@ class Aquarium32 extends React.Component {
             >
               <Icon>menu</Icon>
             </IconButton>
-            <Typography variant="h6" noWrap>
+            <Typography variant="h6" noWrap style={{paddingLeft: always_open ? drawer_width-32 : null}}>
               Aquarium32
             </Typography>
           </Toolbar>
@@ -84,8 +86,8 @@ class Aquarium32 extends React.Component {
           {drawer}
         </Drawer>
         <div style={{marginLeft: ((always_open ? drawer_width : 0) + 12)+'px', marginRight:'12px', marginTop:'76px'}}>
-          {this.state.page=='home' ? (<Home />) : null}
-          {this.state.page=='settings' ? (<Settings />) : null}
+          {page=='tank' ? (<Tank />) : null}
+          {page=='settings' ? (<Settings />) : null}
         </div>
       </div>
     )

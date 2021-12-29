@@ -29,8 +29,12 @@ class Response:
 
     def json(self):
         import ujson
-
-        return ujson.loads(self.content)
+        try:
+          return ujson.load(self.raw)
+        finally:
+          self.raw.close()
+          self.raw = None
+          
 
 
 def request(method, url, data=None, json=None, headers={}, stream=None):
