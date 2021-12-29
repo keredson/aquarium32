@@ -6,6 +6,9 @@ import io
 
 import json
 
+if hasattr(time, 'ticks_ms'): _ticks_ms = time.ticks_ms
+else: _ticks_ms = lambda: int(time.time() * 1000)
+
 class Request:
 
   def __init__(self, app, f):
@@ -77,13 +80,13 @@ class Response:
       self.send_header(header(k, v))
 
   def start(self, status):
-    self.started_at = time.ticks_ms()
+    self.started_at = _ticks_ms()
     self.status_line = '↳ HTTP/1.1 %i %s\r\n' % (status.code, status.reason)
     self.f.write(self.status_line.encode())
     self.sent_status = True
   
   def end(self):
-    took_ms = time.ticks_ms() - self.started_at
+    took_ms = _ticks_ms() - self.started_at
     print(self.status_line.strip(), '<=', self.handled_by.original_pattern if self.handled_by else '(not handled)', 'in %ims' % took_ms)
   
 
@@ -174,7 +177,7 @@ class App:
         self.handle(f)
       except Exception as e:
         print('failed:', e)
-        sys.print_exception(e)
+        _print_exception(e)
       finally:
         f.close()
         cl.close()
@@ -239,7 +242,7 @@ def file(fn, max_age=604800):
     with open(fn,'rb') as f:
       if mime_type:
         yield header('Content-Type', mime_type)
-      if max_age:
+      if max_age is not None:
         yield header('Cache-Control', 'max-age=%i' % max_age)
       yield f
   except OSError:
@@ -263,3 +266,12 @@ def _chain(*args):
   for l in args:
     for x in l:
       yield x
+
+def _print_exception(e):
+  if hasattr(sys, 'print_exception'):
+    sys.print_exception(e)
+  else:
+    print('print_exception', e)
+    import traceback
+    traceback.print_exc()
+
