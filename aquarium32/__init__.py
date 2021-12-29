@@ -1,8 +1,18 @@
-import gc, machine
+import gc, machine, sys
+
+try: 
+  import machine
+  ON_ESP32 = True
+except ModuleNotFoundError:
+  ON_ESP32 = False
 
 def mem_free():
-  if hasattr(gc, 'mem_free'): return gc.mem_free()
-  else: return 'UNK'
+  if ON_ESP32: return gc.mem_free()
+  else: return -1
+
+if ON_ESP32:
+  from . import datetime
+  sys.modules['datetime'] = datetime
 
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them

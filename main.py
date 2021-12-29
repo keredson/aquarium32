@@ -1,4 +1,4 @@
-import sys, time, gc
+import time, gc
 
 try: 
   import machine
@@ -6,13 +6,6 @@ try:
 except ModuleNotFoundError:
   ON_ESP32 = False
 
-if ON_ESP32: print('mem_free', gc.mem_free())
-
-if ON_ESP32:
-  import _datetime
-  sys.modules['datetime'] = _datetime
-  import datetime
-  import urequests as requests
 
 
 if ON_ESP32:
