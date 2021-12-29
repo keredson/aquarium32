@@ -12,16 +12,16 @@ if ON_ESP32:
   import _datetime
   sys.modules['datetime'] = _datetime
   import datetime
+  import urequests as requests
 
 
-if ON_ESP32 and False:
-  import wifimgr
-  print('getting connection')
-  wlan = wifimgr.get_connection()
+if ON_ESP32:
+  import uwifimgr
+  wlan = uwifimgr.get_connection(dhcp_hostname='aquarium32')
   if wlan is None:
       print("Could not initialize the network connection.")
       while True:
-          time.sleep(60)  # you shall not pass :D
+          time.sleep(1)  # you shall not pass :D
   print("ESP OK", wlan.ifconfig())
 
 
@@ -38,12 +38,13 @@ try:
   if ON_ESP32: print('mem_free after uttp', gc.mem_free())
   import util
   if ON_ESP32: print('mem_free after util', gc.mem_free())
-  import aquarium32_server
-  if ON_ESP32: print('mem_free after aquarium32_server', gc.mem_free())
   gc.collect()
   if ON_ESP32: print('mem_free after collect', gc.mem_free())
   import aquarium32
   if ON_ESP32: print('mem_free after aquarium32', gc.mem_free())
+  gc.collect()
+  import aquarium32_server
+  if ON_ESP32: print('mem_free after aquarium32_server', gc.mem_free())
 except MemoryError as e:
   print(e)
   sys.print_exception(e)
@@ -53,6 +54,7 @@ except MemoryError as e:
 
 
 tank = aquarium32.Aquarium32()
+tank.locate()
 aquarium32_server.setup(tank)
 uttp.run_daemon(port=80 if ON_ESP32 else 8080)
 #uttp.run(port=80 if ON_ESP32 else 8080)

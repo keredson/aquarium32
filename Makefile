@@ -1,6 +1,6 @@
 PORT    := /dev/ttyUSB0
 SRC     := .
-SRCS    := $(wildcard $(SRC)/*.py) $(wildcard $(SRC)/pysolar/*.py) $(wildcard $(SRC)/static/*)
+SRCS    := $(wildcard $(SRC)/*.py) $(wildcard $(SRC)/uwifimgr/*.py) $(wildcard $(SRC)/pysolar/*.py) $(wildcard $(SRC)/static/*)
 OBJ     := ./_put
 OBJS    := $(patsubst $(SRC)/%,$(OBJ)/%.done,$(SRCS))
 
@@ -14,6 +14,7 @@ $(OBJ):
 	mkdir $@
 	mkdir $@/pysolar
 	mkdir $@/static
+	mkdir $@/uwifimgr
 
 install: $(OBJS)
 
