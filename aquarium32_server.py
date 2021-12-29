@@ -1,5 +1,5 @@
 import uttp
-import uttpreact
+import uttp.react
 import datetime
 import json
 import util
@@ -8,7 +8,7 @@ import pysolar.util
 
 def setup(tank):
 
-  uttpreact.init()
+  uttp.react.init()
   
   @uttp.get('/hello')
   def hello(req):
