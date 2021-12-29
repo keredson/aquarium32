@@ -174,6 +174,7 @@ class App:
     print('starting', self.name, 'on', addr)
     while True:
       cl, addr = s.accept()
+      cl.settimeout(30)
       f = cl.makefile('rwb', 0)
       try:
         self.handle(f)

@@ -60,6 +60,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     ai = ai[0]
 
     s = socket.socket(ai[0], ai[1], ai[2])
+    s.settimeout(30)
     try:
         s.connect(ai[-1])
         if proto == "https:":
