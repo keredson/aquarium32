@@ -126,7 +126,7 @@ class Aquarium32:
       'fraction':moon['fraction'],
     }
     print(
-      'postion:', (self.latitude, self.longitude), 'at:', now, 'free:', gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
+      'postion:', (self.latitude, self.longitude), 'at:', now, 'free mem: %ib'%gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a', 
     )
 
   def update_leds(self, now, skip_weather=None):
@@ -231,10 +231,10 @@ class Aquarium32:
     while True:
       if self.state != 'realtime': break
       self.ntp_check()
-      self.update_weather()
       now = datetime.datetime.now()
       self.update_positions(now)
       self.update_leds(now)
+      self.update_weather()
       time.sleep(1)
 
   def manual(self):
