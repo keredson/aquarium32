@@ -24,7 +24,7 @@ def setup(tank):
   @uttp.get('/static/<fn>')
   def static_file(req, fn):
     fn = 'static/'+fn
-    yield from uttp.file(fn)
+    yield from uttp.file(fn, max_age=None)
 
   @uttp.post('/set_state')
   def set_state(req):
@@ -76,10 +76,10 @@ def setup(tank):
     new_settings = req.json()
     if new_settings.get('sim_day')=='':
       new_settings['sim_day'] = None
-    if new_settings.get('light_span')=='':
-      new_settings['light_span'] = None
-    if 'light_span' in new_settings:
+    if new_settings.get('light_span'):
       new_settings['light_span'] = int(new_settings['light_span'])
+    if new_settings.get('max_radiation'):
+      new_settings['max_radiation'] = int(new_settings['max_radiation'])
     with open('aquarium32_settings.json','w') as f:
       json.dump(new_settings, f)
     util.load_settings(tank)

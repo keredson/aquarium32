@@ -127,6 +127,21 @@ class Settings extends React.Component {
           </p>
 
           <p>
+            <TextField
+              label={(<span style={{backgroundColor:this.state.max_radiation===this.state._orig_settings?.max_radiation ? '' : '#FFFF99'}}>Maximum Radiation</span>)}
+              type='number'
+              value={this.state.max_radiation}
+              onChange={(e => this.setState({max_radiation:e.target.value}))}
+              InputLabelProps={{ shrink: true }}
+              placeholder='1500'
+            />
+            <FormHelperText>
+              The amount of solar radiation (in watts/m²) that will max out your lighting.
+              Reduce if you find the lighting too dark (esp. in the winter).
+            </FormHelperText>
+          </p>
+
+          <p>
             <FormControlLabel
               control={
                 <Switch
@@ -157,21 +172,25 @@ class Settings extends React.Component {
           </p>
 
           <p style={{marginBottom:0}}>
-            <TextField
-              label={(<span style={{backgroundColor:this.state.lat===this.state._orig_settings?.lat ? '' : '#FFFF99'}}>Latitude</span>)}
-              value={this.state.lat || ''}
-              onChange={(e => this.setState({lat:parseFloat(e.target.value)}))}
-              InputLabelProps={{ shrink: true }}
-              placeholder='39.8283'
-            />
+            <span style={{width:'8em', display:'inline-block'}}>
+              <TextField
+                label={(<span style={{backgroundColor:this.state.lat===this.state._orig_settings?.lat ? '' : '#FFFF99'}}>Latitude</span>)}
+                value={this.state.lat || ''}
+                onChange={(e => this.setState({lat:parseFloat(e.target.value)}))}
+                InputLabelProps={{ shrink: true }}
+                placeholder='39.8283'
+              />
+            </span>
             &nbsp;
-            <TextField
-              label={(<span style={{backgroundColor:this.state.lng===this.state._orig_settings?.lng ? '' : '#FFFF99'}}>Longitude</span>)}
-              value={this.state.lng || ''}
-              onChange={(e => this.setState({lng:parseFloat(e.target.value)}))}
-              InputLabelProps={{ shrink: true }}
-              placeholder='-98.5795'
-            />
+            <span style={{width:'8em', display:'inline-block'}}>
+              <TextField
+                label={(<span style={{backgroundColor:this.state.lng===this.state._orig_settings?.lng ? '' : '#FFFF99'}}>Longitude</span>)}
+                value={this.state.lng || ''}
+                onChange={(e => this.setState({lng:parseFloat(e.target.value)}))}
+                InputLabelProps={{ shrink: true }}
+                placeholder='-98.5795'
+              />
+            </span>
             <FormHelperText>
               Leave blank (recommended) to automatically detect your location from your IP address.
               (An approximation to your city/town.)

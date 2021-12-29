@@ -18,8 +18,6 @@ import util
 
 
 
-MAX_RADIATION = 1500
-
 DATE_RE = re.compile(r'(\d{4})-(\d{2})-(\d{2})')
 
 
@@ -72,6 +70,10 @@ class Aquarium32:
   @property
   def light_span(self):
     return self.settings.light_span or 180
+    
+  @property
+  def max_radiation(self):
+    return self.settings.max_radiation or 1500
     
   def calc_cloudiness(self, now):
     return 1
@@ -133,7 +135,7 @@ class Aquarium32:
     )
     
     if sun['radiation'] > 0:
-      leds = sun['radiation'] / MAX_RADIATION * self.num_leds
+      leds = sun['radiation'] / self.max_radiation * self.num_leds
       sun_center = self._calc_led_index(self.sun['azimuth'])
       start = sun_center - leds/2
       stop = sun_center + leds/2

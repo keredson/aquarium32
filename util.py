@@ -24,6 +24,7 @@ SETTINGS_FIELDS = {
   'skip_weather': None,
   'sim_date': None,
   'light_span': None,
+  'max_radiation': None,
 }
 
 Settings = collections.namedtuple('Settings', list(SETTINGS_FIELDS.keys()))
@@ -35,7 +36,7 @@ def update_weather(self):
     try:
       print('update_weather...')
       gc.collect()
-      resp = requests.get(url='http://www.7timer.info/bin/civil.php?lon=%f&lat=%f&output=json' % (self.lat, self.lng))
+      resp = requests.get(url='http://www.7timer.info/bin/civil.php?lon=%f&lat=%f&output=json' % (self.latitude, self.longitude))
 
       # manually parse json because of memory limitations
       self.clouds_3_hour_interval = []
@@ -49,7 +50,7 @@ def update_weather(self):
       print('self.clouds_3_hour_interval', self.clouds_3_hour_interval)
       self.last_weather_update = time.time()
     except Exception as e:
-      print('update_weather', e)
+      print_exception(e)
 
 def ntp_check(self):
   if not ON_ESP32:
@@ -83,6 +84,8 @@ def print_exception(e):
     sys.print_exception(e)
   else:
     print('print_exception', e)
+    import traceback
+    traceback.print_exc()
     
 def load_settings(self):
   try:
@@ -101,9 +104,9 @@ def load_settings(self):
           self.sun_color = Color(int(sun_color[0:2],16), int(sun_color[2:4],16), int(sun_color[4:6],16))
   except OSError as e:
     print('aquarium32_settings.json not found, loading defaults')
-    self.settings = Settings(None,None,None,None,None,None,None)
+    self.settings = Settings(*[None]*len(SETTINGS_FIELDS))
   except Exception as e:
-    self.settings = Settings(None,None,None,None,None,None,None)
+    self.settings = Settings(*[None]*len(SETTINGS_FIELDS))
     print_exception(e)
   try:
     self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
