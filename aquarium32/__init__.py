@@ -13,19 +13,16 @@ def mem_free():
 if ON_ESP32:
   from . import datetime
   sys.modules['datetime'] = datetime
-
+  
 try:
   # pre-load all imports so they don't OOM when aquarium32 uses them
   print('mem_free at start', mem_free())
   import uttp
   gc.collect()
   print('mem_free after uttp', mem_free())
-  import pysolar.solar
+  import pysolar
   gc.collect()
-  print('mem_free after pysolar.solar', mem_free())
-  import pysolar.util
-  gc.collect()
-  print('mem_free after pysolar.util', mem_free())
+  print('mem_free after pysolar', mem_free())
   import suncalc
   gc.collect()
   print('mem_free after suncalc', mem_free())
