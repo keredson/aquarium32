@@ -1,4 +1,4 @@
-import gc, machine, sys
+import gc, sys
 
 try: 
   import machine
