@@ -173,17 +173,17 @@ class App:
     s.listen(1)
     print('starting', self.name, 'on', addr)
     while True:
-      cl, addr = s.accept()
-      cl.settimeout(30)
-      f = cl.makefile('rwb', 0)
       try:
+        cl, addr = s.accept()
+        cl.settimeout(30)
+        f = cl.makefile('rwb', 0)
         self.handle(f)
       except Exception as e:
         print('failed:', e)
         _print_exception(e)
       finally:
-        f.close()
-        cl.close()
+        if 'f' in locals(): f.close()
+        if 'cl' in locals(): cl.close()
       
   def run_daemon(self, host='0.0.0.0', port=80):
     import _thread  
