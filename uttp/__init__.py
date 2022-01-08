@@ -83,7 +83,7 @@ class Response:
 
   def start(self, status):
     self.started_at = _ticks_ms()
-    self.status_line = '↳ HTTP/1.1 %i %s\r\n' % (status.code, status.reason)
+    self.status_line = '↳ HTTP/1.0 %i %s\r\n' % (status.code, status.reason)
     self.f.write(self.status_line.encode())
     self.sent_status = True
   
@@ -166,24 +166,27 @@ class App:
     loop.run_forever()
 
   def run(self, host='0.0.0.0', port=80):
-    addr = socket.getaddrinfo(host, port)[0][-1]
-    s = socket.socket()
+    addr = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)[0][-1]
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
-    s.listen(1)
+    s.listen(16)
     print('starting', self.name, 'on', addr)
     while True:
+      cl = None
+      f = None
       try:
-        cl, addr = s.accept()
+        cl, frm = s.accept()
+        print('μttp:', 'connection from', frm)
         cl.settimeout(30)
-        f = cl.makefile('rwb', 0)
+        f = cl.makefile('rwb')
         self.handle(f)
       except Exception as e:
         print('failed:', e)
         _print_exception(e)
       finally:
-        if 'f' in locals(): f.close()
-        if 'cl' in locals(): cl.close()
+        if f: f.close()
+        if cl: cl.close()
       
   def run_daemon(self, host='0.0.0.0', port=80):
     import _thread  
