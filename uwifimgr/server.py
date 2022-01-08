@@ -1,3 +1,5 @@
+import network
+
 wlan_ap = network.WLAN(network.AP_IF)
 wlan_sta = network.WLAN(network.STA_IF)
 
