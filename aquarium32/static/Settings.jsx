@@ -6,7 +6,8 @@ const {
   TableContainer, Table, TableHead, TableRow, TableCell, TableBody, 
   Typography,
   Select, MenuItem,
-  TextField, FormControlLabel, Switch, FormHelperText
+  TextField, FormControlLabel, Switch, FormHelperText,
+  Checkbox,
 } = window.MaterialUI;
 
 class Settings extends React.Component {
@@ -59,7 +60,113 @@ class Settings extends React.Component {
   }
   
   ready() {
-    return this.state.num_leds
+    return true
+  }
+  
+  add_strip() {
+    var strips = this.state.strips || []
+    strips.push({pin:null, leds:null, light_span:null, reversed:false})
+    this.setState({strips:strips})
+  }
+  
+  setStripState(i, v) {
+    var strips = this.state.strips
+    var strip = strips[i]
+    Object.assign(strip, v)
+    this.setState({strips: strips})
+  }
+  
+  delete_strip(i) {
+    var strips = this.state.strips
+    strips.splice(i,1)
+    this.setState({strips: strips})
+  }
+  
+  render_led_strips() {
+    return (
+      <div>
+        <Typography variant="h4">
+          LED Strips
+        </Typography>
+        
+        {this.state.strips?.length ? this.state.strips.map((row, i) => (
+          <Paper style={{padding:'1em 1em', marginBottom:'1em'}}>
+
+            <IconButton onClick={() => this.delete_strip(i)} style={{float:'right'}}>
+              <Icon>delete</Icon>
+            </IconButton>
+
+            <p style={{marginTop:0}}>
+              <TextField
+                label={(<span >Pin</span>)}
+                type="number"
+                required
+                value={row.pin}
+                defaultValue={null}
+                onChange={(e => this.setStripState(i, {pin:parseInt(e.target.value)}))}
+                helperText="ESP32 digital pin number."
+                InputLabelProps={{ shrink: true }}
+                placeholder='13'
+              />
+            </p>
+            <p style={{marginTop:0}}>
+              <TextField
+                label={(<span >LEDs</span>)}
+//                type="number"
+                inputProps={{ inputMode: 'numeric', pattern:"[0-9]+-?[0-9]*" }}
+                value={row.leds}
+                defaultValue={null}
+                onChange={(e => this.setStripState(i, {leds:e.target.value}))}
+//                onChange={(e => console.log('e.target.value', e.target.value))}
+                InputLabelProps={{ shrink: true }}
+                placeholder='144 or 1-144'
+              />
+              <FormHelperText>
+                The number of LEDs in your strip, or a range (inclusive) if you want to use only a subset.
+                LED strips typically have either 30 or 144 LEDs per meter.
+              </FormHelperText>
+            </p>
+            <p>
+              <TextField
+                label={(<span >Lighting Span (degrees)</span>)}
+                type="number"
+                value={row.light_span}
+                onChange={(e => this.setStripState(i, {light_span:parseInt(e.target.value)}))}
+                InputLabelProps={{ shrink: true }}
+                placeholder='180'
+              />
+              <FormHelperText>
+                If your lights span the top or a single side, this should be 180°.
+                If your lights wrap around three sides, then 270°.
+                All four sides, 360°, etc.
+              </FormHelperText>
+            </p>
+            <p style={{marginTop:0}}>
+              <FormControlLabel
+                control={
+                  <Checkbox 
+                    checked={row.reversed} onChange={null}
+                    onChange={(e => this.setStripState(i, {reversed:e.target.checked}))}
+                  />}
+                label="Reverse East/West"
+              />
+              <FormHelperText>
+                Depending on tank and LED orientation.
+              </FormHelperText>
+            </p>
+          </Paper>
+        )) : (
+          <FormHelperText>
+            No LED strips set up.  Please add one!
+          </FormHelperText>
+        )}
+        <div style={{marginTop:'.5em'}}>
+          <Button variant="contained" onClick={() => this.add_strip()} startIcon={<Icon>add</Icon>}>
+            LED Strip
+          </Button>
+        </div>
+      </div>
+    )
   }
   
   render() {
@@ -84,37 +191,13 @@ class Settings extends React.Component {
           * Required
         </Typography>
 
+        {this.render_led_strips()}
+
+        <Typography variant="h4" style={{marginTop:'1em'}}>
+          Other Settings
+        </Typography>
+        
         <Paper style={{padding:'1em 1em'}}>
-          <p style={{marginTop:0}}>
-            <TextField
-              label={(<span style={{backgroundColor:this.state.num_leds===this.state._orig_settings?.num_leds ? '' : '#FFFF99'}}>Number of LEDs</span>)}
-              type="number"
-              required
-              value={this.state.num_leds}
-              defaultValue='1'
-              onChange={(e => this.setState({num_leds:parseInt(e.target.value)}))}
-              helperText="LED strips typically have either 30 or 144 LEDs per meter.  Waterproof recommended."
-              InputLabelProps={{ shrink: true }}
-              placeholder='144'
-            />
-          </p>
-
-          <p>
-            <TextField
-              label={(<span style={{backgroundColor:this.state.light_span===this.state._orig_settings?.light_span ? '' : '#FFFF99'}}>Lighting Span (degrees)</span>)}
-              type="number"
-              value={this.state.light_span}
-              onChange={(e => this.setState({light_span:e.target.value}))}
-              InputLabelProps={{ shrink: true }}
-              placeholder='180'
-            />
-            <FormHelperText>
-              If your lights span the top or a single side, this should be 180°.
-              If your lights wrap around three sides, then 270°.
-              All four sides, 360°, etc.
-            </FormHelperText>
-          </p>
-
           <p>
             <TextField
               label={(<span style={{backgroundColor:this.state.sun_color===this.state._orig_settings?.sun_color ? '' : '#FFFF99'}}>Sun Color</span>)}

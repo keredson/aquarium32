@@ -2,7 +2,7 @@ import unittest
 
 from datetime import datetime
 import suncalc
-from aquarium32 import Aquarium32
+from aquarium32 import Tank
 
 
 
@@ -25,9 +25,9 @@ class TestSunCalc(unittest.TestCase):
 class TestAquarium32(unittest.TestCase):
 
     def test_datetime(self):
-        tank = Aquarium32()
+        tank = Tank()
         tank.update_positions(datetime(2021, 6, 21, 18, 0, 0, 0))
-        tank.update_leds()
+        tank.update_leds(now=datetime.now())
 #        for i in range(24):
 #          for j in [0,15,30,45]:
 #            tank.main(datetime(2021, 6, 21, i, j, 0, 0))

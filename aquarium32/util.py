@@ -19,14 +19,13 @@ WEATHER_UPDATE_INTERVAL_SECONDS = 60*60*24
 DEFAULT_LAT, DEFAULT_LNG = 39.8283, -98.5795
 
 SETTINGS_FIELDS = {
-  'num_leds': None,
   'lat': None,
   'lng': None,
   'sun_color': None,
   'skip_weather': None,
   'sim_date': None,
-  'light_span': None,
   'max_radiation': None,
+  'strips': None,
 }
 
 Settings = collections.namedtuple('Settings', list(SETTINGS_FIELDS.keys()))
@@ -95,6 +94,10 @@ def load_settings(self):
       print('found aquarium32_settings.json')
       settings = dict(SETTINGS_FIELDS)
       settings.update(json.load(f))
+      for k in settings.keys():
+        if k not in SETTINGS_FIELDS:
+          del settings[k]
+      print('settings', settings)
       self.settings = Settings(**settings)
       print('loaded', self.settings)
       if self.settings.lat: self.lat = self.settings.lat
@@ -110,8 +113,18 @@ def load_settings(self):
   except Exception as e:
     self.settings = Settings(*[None]*len(SETTINGS_FIELDS))
     print_exception(e)
+  self.nps = {}
   try:
-    self.np = neopixel.NeoPixel(machine.Pin(13), self.num_leds)
+    leds_by_pin = {}
+    for strip in settings.get('strips') or []:
+      pin = strip.get('pin')
+      leds = int((strip.get('leds') or '1').split('-')[-1])
+      if pin and leds >= leds_by_pin.get(pin, 0):
+        leds_by_pin[pin] = leds
+    for strip in settings.get('strips') or []:
+      pin = strip.get('pin')
+      if pin:
+        self.nps[pin] = neopixel.NeoPixel(machine.Pin(pin), leds_by_pin[pin])
   except NameError as e:
     print_exception(e)
     self.np = None

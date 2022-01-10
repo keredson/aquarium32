@@ -3,8 +3,14 @@ import re
 import time
 import sys
 import io
-
 import json
+import gc
+
+try: 
+  import machine
+  ON_ESP32 = True
+except ModuleNotFoundError:
+  ON_ESP32 = False
 
 if hasattr(time, 'ticks_ms'): _ticks_ms = time.ticks_ms
 else: _ticks_ms = lambda: int(time.time() * 1000)
@@ -121,7 +127,10 @@ class Route:
       elif isinstance(ret, dict):
         response.send_header(header('Content-Type', 'application/json'))
         response._pre_write()
-        json.dump(ret, f)
+        if ON_ESP32:
+          json.dump(ret, f)
+        else:
+          json.dump(ret, io.TextIOWrapper(f))
       elif 'io.TextIOWrapper' in repr(ret):
         while b:=ret.read(BUFFER_SIZE):
           response.write(b)
@@ -170,13 +179,15 @@ class App:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
-    s.listen(16)
+    s.listen(0)
     print('starting', self.name, 'on', addr)
     while True:
       cl = None
       f = None
+      gc.collect()
       try:
         cl, frm = s.accept()
+        gc.collect()
         print('μttp:', 'connection from', frm)
         cl.settimeout(30)
         f = cl.makefile('rwb')

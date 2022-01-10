@@ -5,7 +5,7 @@ SRCS    := $(wildcard $(SRC)/*.py) \
            $(wildcard $(SRC)/uttp/*.py) \
            $(wildcard $(SRC)/uwifimgr/*.py) \
            $(wildcard $(SRC)/pysolar/*.py) \
-           $(wildcard $(SRC)/static/*)
+           $(wildcard $(SRC)/aquarium32/static/*)
 OBJ     := ./_put
 OBJS    := $(patsubst $(SRC)/%,$(OBJ)/%.done,$(SRCS))
 
@@ -18,9 +18,9 @@ $(OBJ)/%.done: $(SRC)/% | $(OBJ)
 $(OBJ):
 	mkdir $@
 	mkdir $@/pysolar
-	mkdir $@/static
 	mkdir $@/uwifimgr
 	mkdir $@/aquarium32
+	mkdir $@/aquarium32/static
 
 install: $(OBJS)
 

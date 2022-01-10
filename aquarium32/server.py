@@ -5,25 +5,22 @@ import json
 from . import util
 import pysolar.util
 
+STATIC_PATH = 'aquarium32/static/'
+
 
 def setup(tank):
 
-  uttp.react.init()
+  uttp.react.init(jsx_path=STATIC_PATH)
   
-  @uttp.get('/hello')
-  def hello(req):
-    yield 'hello '
-    yield uttp.request.params.get('name', 'world')
-
   @uttp.get('/')
   def index(req):
     yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
-    with open('static/index.html') as f:
+    with open(STATIC_PATH+'index.html') as f:
       yield f
 
   @uttp.get('/static/<fn>')
   def static_file(req, fn):
-    fn = 'static/'+fn
+    fn = STATIC_PATH+fn
     yield from uttp.file(fn, max_age=None)
 
   @uttp.post('/set_state')

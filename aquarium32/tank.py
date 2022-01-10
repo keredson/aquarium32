@@ -29,7 +29,6 @@ class Tank:
     print('Aquarium32')
     self.last_ntp_check = 0
     
-    self.np = None
     self.sun_color = util.Color(255,255,255)
     self._cloudiness = 0
 
@@ -66,11 +65,11 @@ class Tank:
     
   @property
   def num_leds(self):
-    return self.settings.num_leds or 144
+    return 144
     
   @property
   def light_span(self):
-    return self.settings.light_span or 180
+    return 180
     
   @property
   def max_radiation(self):
@@ -84,10 +83,10 @@ class Tank:
     return cloudiness
     
   def clear(self):
-    if self.np:
-      for i in range(self.num_leds):
-        self.np[i] = (0,0,0)
-      self.np.write()
+    for np in self.nps.values():
+      for i in range(np.n):
+        np[i] = (0,0,0)
+      np.write()
   
   def handle_interrupt(self, pin):
     print('handle_interrupt')
@@ -97,8 +96,8 @@ class Tank:
   ntp_check = util.ntp_check
   locate = util.locate
          
-  def _calc_led_index(self, azimuth):
-    return azimuth / self.light_span * self.num_leds + self.num_leds/2
+  def _calc_led_index(self, azimuth, num_leds):
+    return azimuth / self.light_span * num_leds + num_leds/2
          
   def update_positions(self, now):
     gc.collect()
@@ -135,29 +134,47 @@ class Tank:
     print(
       'sun:', self.sun, 'moon:', self.moon
     )
+    for strip in self.settings.strips or []:
+      self.update_led_strip(now, strip, skip_weather=None)
+    for np in self.nps.values():
+      np.write()
+    
+
+  def update_led_strip(self, now, strip, skip_weather=None):
+    sun = self.sun
+    moon = self.moon
+    leds_desc = (strip.get('leds') or '0').strip().split('-')
+    if len(leds_desc)==1:
+      start_led = 1
+      stop_led = int(leds_desc[0])
+    else:
+      start_led = int(leds_desc[0])
+      stop_led = int(leds_desc[1])
+    num_leds = stop_led - start_led + 1
+    print('start_led', start_led, 'stop_led', stop_led, 'num_leds', num_leds)
     
     if sun['radiation'] > 0:
-      leds = sun['radiation'] / self.max_radiation * self.num_leds
-      sun_center = self._calc_led_index(self.sun['azimuth'])
+      leds = sun['radiation'] / self.max_radiation * num_leds
+      sun_center = self._calc_led_index(self.sun['azimuth'], num_leds)
       start = sun_center - leds/2
       stop = sun_center + leds/2
       if start < 0:
         stop -= start
         start = 0
-      elif stop > self.num_leds:
-        start -= stop - self.num_leds
-        stop = self.num_leds
+      elif stop > num_leds:
+        start -= stop - num_leds
+        stop = num_leds
       print('start', start, 'stop', stop)
       
 
-      brightness = (max(0, min(i+1, stop) - max(i,start)) for i in range(self.num_leds))
+      brightness = (max(0, min(i+1, stop) - max(i,start)) for i in range(num_leds))
     else:
-      brightness = (0 for i in range(self.num_leds))
+      brightness = (0 for i in range(num_leds))
       
 
     moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
-    moon_led = self._calc_led_index(self.moon['azimuth'])
-    moon_led = max(0, min(moon_led, self.num_leds-1))
+    moon_led = self._calc_led_index(self.moon['azimuth'], num_leds)
+    moon_led = max(0, min(moon_led, num_leds-1))
         
     def f(i, v, cloudiness):
       r = max(0,v*self.sun_color.r)
@@ -192,16 +209,16 @@ class Tank:
     
     cloudiness = self.calc_cloudiness(now)
     print('cloudiness',cloudiness)
-    np = (f(i, v, cloudiness) for i, v in enumerate(brightness))
+    color_gen = (f(i, v, cloudiness) for i, v in enumerate(brightness))
+    np = self.nps.get(strip['pin'])
+    print('np', np, np.n if np else None, strip, self.nps)
     
-    if self.np:
-      for i, color in enumerate(np):
-        r, g, b = color
-        self.np[i] = color
+    for i, color in enumerate(color_gen):
+      r, g, b = color
+      if np: np[i + start_led - 1] = color
         #print(self.np[i], end='')
       #print()
 
-      self.np.write()
 
   
   def sim_day(self, start = None, step_mins = 10):
@@ -250,10 +267,10 @@ class Tank:
       time.sleep(1)
 
   def full(self):
-    if self.np:
-      for i in range(self.num_leds):
-        self.np[i] = (255,255,255)
-      self.np.write()
+    for np in self.nps.values():
+      for i in range(np.n):
+        np[i] = (255,255,255)
+      np.write()
     while True:
       if self.state != 'full': break
       time.sleep(1)

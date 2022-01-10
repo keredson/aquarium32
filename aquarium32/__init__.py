@@ -29,8 +29,6 @@ try:
   from . import util
   gc.collect()
   print('mem_free after util', mem_free())
-  gc.collect()
-  print('mem_free after collect', mem_free())
   from . import tank
   Tank = tank.Tank
   gc.collect()
