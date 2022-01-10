@@ -69,7 +69,7 @@ def setup(tank):
       'city': tank.city,
       'region': tank.region,
       'country': tank.country,
-      'num_leds': tank.num_leds,
+      'num_leds': 0,
       'sun': tank.sun,
       'moon': tank.moon,
       'when': str(tank.when),
