@@ -20,9 +20,9 @@ BUFFER_SIZE = 128
 class Request:
 
   def __init__(self, app, f):
-    request_line = f.readline().decode()
     self.app = app
     self._f = f
+    request_line = self.readline().decode()
     if not request_line: raise Exception('empty request')
     self.method, path, self.proto = request_line.split()
     path = path.split('?', 1)
@@ -35,7 +35,7 @@ class Request:
       self.params = {}
 
     self.headers = {}
-    while header_line := f.readline():
+    while header_line := self.readline():
       if header_line == b'\r\n': break
       k, v = header_line.decode().strip().split(': ')
       self.headers[k] = v
@@ -49,6 +49,16 @@ class Request:
     assert self.headers['Content-Type'] == 'application/json'
     return json.loads(post_data)
     
+  def readline(self):
+    line = b''
+    try:
+      while not line.endswith(b'\n'):
+          line += self._f.recv(1)
+      return line
+    except Exception as e:
+      print('readline', e, repr(line))
+      raise e
+
 
 
 class Response:
@@ -179,6 +189,7 @@ class App:
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
+    s.settimeout(10)
     s.listen(0)
     print('starting', self.name, 'on', addr)
     while True:
@@ -186,12 +197,12 @@ class App:
       f = None
       gc.collect()
       try:
+        print('μttp:', 'listening...')
         cl, frm = s.accept()
-        gc.collect()
         print('μttp:', 'connection from', frm)
-        cl.settimeout(30)
-        f = cl.makefile('rwb')
-        self.handle(f)
+        gc.collect()
+        cl.settimeout(10)
+        self.handle(cl)
       except Exception as e:
         print('failed:', e)
         _print_exception(e)
