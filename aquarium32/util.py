@@ -113,6 +113,7 @@ def load_settings(self):
   except Exception as e:
     self.settings = Settings(*[None]*len(SETTINGS_FIELDS))
     print_exception(e)
+  del self.nps
   self.nps = {}
   try:
     leds_by_pin = {}
@@ -124,8 +125,10 @@ def load_settings(self):
     for strip in settings.get('strips') or []:
       pin = strip.get('pin')
       if pin:
+        gc.collect()
+        print('gc.mem_free()', gc.mem_free())
         self.nps[pin] = neopixel.NeoPixel(machine.Pin(pin), leds_by_pin[pin])
   except NameError as e:
     print_exception(e)
-    self.np = None
+    self.nps = None
 

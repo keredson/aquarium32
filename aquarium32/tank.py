@@ -1,5 +1,7 @@
 import collections, datetime, math, os, random, re, sys, time
 
+import uasyncio as asyncio
+
 try: 
   import gc
   import machine
@@ -32,6 +34,7 @@ class Tank:
     
     self.sun_color = util.Color(255,255,255)
     self._cloudiness = 0
+    self.nps = {}
 
     util.load_settings(self)
 
@@ -138,7 +141,7 @@ class Tank:
 
   update_led_strip = update_led_strip.update_led_strip
   
-  def sim_day(self, start = None, step_mins = 10):
+  async def sim_day(self, start = None, step_mins = 10):
     if start is None:
       start = datetime.datetime.now()
     ts = start.timestamp()
@@ -153,15 +156,15 @@ class Tank:
     self.state = 'realtime'
   
   
-  def main(self):
+  async def main(self):
     if not self.lat or not self.lng: self.locate()
     while True:
       f = getattr(self, self.state)
-      if f: f()
+      if f: await f()
       self.clear()
-      time.sleep(1)
+      await asyncio.sleep(1)
     
-  def realtime(self):
+  async def realtime(self):
     while True:
       if self.state != 'realtime': break
       self.ntp_check()
@@ -169,26 +172,39 @@ class Tank:
       self.update_positions(now)
       self.update_leds(now)
       self.update_weather()
-      time.sleep(5)
+      await asyncio.sleep(1)
 
-  def manual(self):
+  async def manual(self):
     while True:
       if self.state != 'manual': break
       self.update_leds(datetime.datetime.now())
-      time.sleep(1)
+      await asyncio.sleep(1)
 
-  def off(self):
+  async def off(self):
     self.clear()
     while True:
       if self.state != 'off': break
-      time.sleep(1)
+      await asyncio.sleep(1)
 
-  def full(self):
+  async def full(self):
     for np in self.nps.values():
       for i in range(np.n):
         np[i] = (255,255,255)
       np.write()
     while True:
       if self.state != 'full': break
-      time.sleep(1)
+      await asyncio.sleep(1)
+  
+  def run_tank_and_server(self, host='0.0.0.0', port=80):
+    loop = asyncio.get_event_loop()
+    loop.create_task(heartbeat())
+    loop.create_task(uttp.DEFAULT._serve(host, port))
+    loop.create_task(self.main())
+    loop.run_forever()
+
+async def heartbeat():
+  while True:
+    print('woot')
+    await asyncio.sleep(1)
+    
       

@@ -6,6 +6,10 @@ import io
 import json
 import gc
 
+import uasyncio as asyncio
+import uasyncio.core
+import uselect as select
+
 try: 
   import machine
   ON_ESP32 = True
@@ -16,13 +20,16 @@ if hasattr(time, 'ticks_ms'): _ticks_ms = time.ticks_ms
 else: _ticks_ms = lambda: int(time.time() * 1000)
 
 BUFFER_SIZE = 128
+IS_UASYNCIO_V3 = hasattr(asyncio, "__version__") and asyncio.__version__ >= (3,)
 
 class Request:
 
   def __init__(self, app, f):
     self.app = app
     self._f = f
-    request_line = self.readline().decode()
+  
+  async def start(self):
+    request_line = (await self._f.readline()).decode()
     if not request_line: raise Exception('empty request')
     self.method, path, self.proto = request_line.split()
     path = path.split('?', 1)
@@ -35,30 +42,22 @@ class Request:
       self.params = {}
 
     self.headers = {}
-    while header_line := self.readline():
+    while header_line := await self._f.readline():
       if header_line == b'\r\n': break
       k, v = header_line.decode().strip().split(': ')
       self.headers[k] = v
 
+    if 'Content-Length' in self.headers:
+      length = int(self.headers['Content-Length'])
+      if length:
+        self._post_data = await self._f.read(length)
+  
     print('%s:'%self.app.name, self.proto, self.method, self.path, self.params)
     
   def json(self):
-    length = int(self.headers['Content-Length'])
-    post_data = self._f.read(length)
-    print('post_data', post_data)
+    print('post_data', self._post_data)
     assert self.headers['Content-Type'] == 'application/json'
-    return json.loads(post_data)
-    
-  def readline(self):
-    line = b''
-    try:
-      while not line.endswith(b'\n'):
-          line += self._f.recv(1)
-      return line
-    except Exception as e:
-      print('readline', e, repr(line))
-      raise e
-
+    return json.loads(self._post_data)
 
 
 class Response:
@@ -70,40 +69,41 @@ class Response:
     self.started_body = False
     self.handled_by = None
     
-  def _pre_write(self):
+  async def _pre_write(self):
     if not self.sent_status:
-      self.start(status(200))
+      await self.start(status(200))
     if not self.sent_content_type:
-      self.send_header(header('Content-Type', 'text/html; charset=utf-8'))
+      await self.send_header(header('Content-Type', 'text/html; charset=utf-8'))
     if not self.started_body:
-      self.f.write(b'\r\n')
+      await self.f.awrite(b'\r\n')
       self.started_body = True
           
-  def write(self, d):
-    self._pre_write()
+  async def write(self, d):
+    await self._pre_write()
     if isinstance(d, str): d = d.encode()
-    self.f.write(d)
+    await self.f.awrite(d)
    
-  def send_header(self, h):
+  async def send_header(self, h):
     if not self.sent_status:
-      self.start(status(200))
+      await self.start(status(200))
     if h.k=='Content-Type': self.sent_content_type = True
-    self.f.write(h.k.encode())
-    self.f.write(': '.encode())
-    self.f.write(h.v.encode())
-    self.f.write(b'\r\n')
+    await self.f.awrite(h.k.encode())
+    await self.f.awrite(': '.encode())
+    await self.f.awrite(h.v.encode())
+    await self.f.awrite(b'\r\n')
 
-  def send_headers(self, headers):
+  async def send_headers(self, headers):
     for k, v in headers.items():
-      self.send_header(header(k, v))
+      await self.send_header(header(k, v))
 
-  def start(self, status):
+  async def start(self, status):
     self.started_at = _ticks_ms()
     self.status_line = '↳ HTTP/1.0 %i %s\r\n' % (status.code, status.reason)
-    self.f.write(self.status_line.encode())
+    await self.f.awrite(self.status_line.encode())
+    print('xxxxxxxxxxxx')
     self.sent_status = True
   
-  def end(self):
+  async def end(self):
     took_ms = _ticks_ms() - self.started_at
     print(self.status_line.strip(), '<=', self.handled_by.original_pattern if self.handled_by else '(not handled)', 'in %ims' % took_ms)
   
@@ -121,7 +121,7 @@ class Route:
       _pattern = re.sub(r'<\w+>', '([^/]+)', pattern)+'$'
       self.pattern = re.compile(_pattern)
       
-  def handle(self, request, response, match):
+  async def handle(self, request, response, match):
     f = response.f
     args = [request]
     while True:
@@ -129,29 +129,49 @@ class Route:
       except IndexError: break # no more args
     for ret in self.f(*args):
       if isinstance(ret, status):
-        response.start(ret)
+        await response.start(ret)
       elif isinstance(ret, header):
-        response.send_header(ret)
+        await response.send_header(ret)
       elif isinstance(ret, str):
-        response.write(ret)
+        await response.write(ret)
       elif isinstance(ret, dict):
-        response.send_header(header('Content-Type', 'application/json'))
-        response._pre_write()
-        if ON_ESP32:
-          json.dump(ret, f)
-        else:
-          json.dump(ret, io.TextIOWrapper(f))
+        await response.send_header(header('Content-Type', 'application/json'))
+        await response._pre_write()
+        await _json_dump_async(ret, f)
+        #await response.write(json.dumps(ret))
       elif 'io.TextIOWrapper' in repr(ret):
         while b:=ret.read(BUFFER_SIZE):
-          response.write(b)
+          await response.write(b)
       elif 'io.BufferedReader' in repr(ret):
         while b:=ret.read(BUFFER_SIZE):
-          response.write(b)
+          await response.write(b)
       elif 'io.FileIO' in repr(ret):
         while b:=ret.read(BUFFER_SIZE):
-          response.write(b)
+          await response.write(b)
       else: raise Exception('unknown response type:', ret)
-    response.end()
+    await response.end()
+    
+    
+async def _json_dump_async(o, f):
+  if isinstance(o, dict):
+    await f.awrite('{')
+    first = True
+    for k,v in o.items():
+      if not first: await f.awrite(',')
+      else: first = False
+      await _json_dump_async(k, f)
+      await f.awrite(':')
+      await _json_dump_async(v, f)
+    await f.awrite('}')
+  elif isinstance(o, list):
+    await f.awrite('[')
+    for i, x in enumerate(o):
+      await _json_dump_async(x, f)
+      if i!=len(o)-1:
+        await f.awrite(',')
+    await f.awrite(']')
+  else:
+    await f.awrite(json.dumps(o))
 
 
 class App:
@@ -179,53 +199,48 @@ class App:
       self._get_routes(method).append(Route(f, method, pattern))
     return decorator
   
-  def serve(self, loop, host, port):
-    print('starting', self.name, 'on', '%s:%d' % (host, port))
-    loop.create_task(asyncio.start_server(self.handle, host, port))
-    loop.run_forever()
-
-  def run(self, host='0.0.0.0', port=80):
+  async def _serve(self, host='0.0.0.0', port=80):
     addr = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)[0][-1]
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(addr)
-    s.settimeout(10)
-    s.listen(0)
+    s_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s_sock.setblocking(False)
+    s_sock.bind(addr)
+    s_sock.listen(16)
+    poller = select.poll()
+    poller.register(s_sock, select.POLLIN)
+    loop = asyncio.get_event_loop()
+
     print('starting', self.name, 'on', addr)
     while True:
-      cl = None
-      f = None
-      gc.collect()
-      try:
-        print('μttp:', 'listening...')
-        cl, frm = s.accept()
-        print('μttp:', 'connection from', frm)
-        gc.collect()
-        cl.settimeout(10)
-        self.handle(cl)
-      except Exception as e:
-        print('failed:', e)
-        _print_exception(e)
-      finally:
-        if f: f.close()
-        if cl: cl.close()
-      
-  def run_daemon(self, host='0.0.0.0', port=80):
-    import _thread  
-    _thread.start_new_thread(self.run, (host, port))
+      res = poller.poll(1)
+      if res:
+        c_sock, _ = s_sock.accept()
+        loop.create_task(self.handle(c_sock))
+      await asyncio.sleep(1)
 
 
-  def handle(self, f):
-    request = Request(self, f)
-    response = Response(f)
-    for route in _chain(self._get_routes(request.method), self._get_routes('*')):
-      match = route.pattern.match(request.path)
-      if match:
-        response.handled_by = route
-        route.handle(request, response, match)
-        break
-    else:
-      response.start(status=status(404))
+  async def handle(self, sock):
+    sreader = asyncio.StreamReader(sock)
+    swriter = asyncio.StreamWriter(sock, {})
+    print('Got connection from client')
+    try:
+      request = Request(self, sreader)
+      await request.start()
+      response = Response(swriter)
+      for route in _chain(self._get_routes(request.method), self._get_routes('*')):
+        match = route.pattern.match(request.path)
+        if match:
+          response.handled_by = route
+          await route.handle(request, response, match)
+          break
+      else:
+        await response.start(status=status(404))
+        print('xxxxxxxxxxxx2')
+    except OSError:
+        pass
+    print('Client {} disconnect')
+    sock.close()
+
     
 
 class status:
@@ -247,8 +262,6 @@ DEFAULT_CODE_REASONS = {
 DEFAULT = App()
 get = DEFAULT.get
 post = DEFAULT.post
-run = DEFAULT.run
-run_daemon = DEFAULT.run_daemon
 
 
 EXT_MIME_TYPES = {

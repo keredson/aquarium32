@@ -21,9 +21,11 @@ if ON_ESP32:
 import aquarium32
 
 tank = aquarium32.Tank()
-tank.locate()
+tank.locate() 
 aquarium32.server.setup(tank)
-aquarium32.server.run_daemon(port=80 if ON_ESP32 else 8080)
+tank.run_tank_and_server(port=80 if ON_ESP32 else 8080)
 #aquarium32.server.run(port=80 if ON_ESP32 else 8080)
-tank.main()
+#aquarium32.server.run_daemon(port=80 if ON_ESP32 else 8080)
+#while True: time.sleep(5)
+#tank.main()
 

@@ -4,6 +4,8 @@ import datetime
 import json
 from . import util
 import pysolar.util
+import uasyncio as asyncio
+
 
 STATIC_PATH = 'aquarium32/static/'
 
@@ -87,7 +89,11 @@ def setup(tank):
       new_settings['max_radiation'] = int(new_settings['max_radiation'])
     with open('aquarium32_settings.json','w') as f:
       json.dump(new_settings, f)
-    util.load_settings(tank)
+    async def f():
+      await asyncio.sleep(1)
+      util.load_settings(tank)
+    loop = asyncio.get_event_loop()
+    loop.create_task(f())
     yield 'ok'
 
   @uttp.get('/settings.json')
