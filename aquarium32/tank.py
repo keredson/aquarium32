@@ -170,7 +170,7 @@ class Tank:
       self.update_positions(now)
       self.update_leds(now)
       self.update_weather()
-      await asyncio.sleep(.1)
+      await asyncio.sleep(1)
 
   async def manual(self):
     while True:
