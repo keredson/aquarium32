@@ -12,6 +12,7 @@ def init(jsx_path='static', version=None, include_js=None):
   CLASS_MAP = {}
   jsx_path = jsx_path.rstrip('/')
   serve_root = '/__uttpreact__/%s' % version
+  dirty = not version or version.endswith('-dirty')
   pattern = re.compile(r'class\s+(\w+)\s+extends\s+React.Component')
   for fn in os.listdir(jsx_path):
     if not fn.endswith('.jsx'): continue
@@ -28,6 +29,8 @@ def init(jsx_path='static', version=None, include_js=None):
   @uttp.get(serve_root+'/<fn>')
   def serve_jsx_files(req, fn):
     fn = '%s/%s' % (jsx_path, fn)
+    if not dirty:
+      yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
     yield from uttp.file(fn, max_age=None)
 
   @uttp.get(r'/__uttpreact__')
@@ -37,7 +40,8 @@ def init(jsx_path='static', version=None, include_js=None):
   @uttp.get(r'/__uttpreact__'+version)
   def __uttpreact__version(req):
     yield uttp.header('Content-Type', 'text/javascript')
-#    yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
+    if not dirty:
+      yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
     yield '''
       let __uttpreact__ = {
         root: "%s",
