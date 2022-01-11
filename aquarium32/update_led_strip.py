@@ -25,6 +25,7 @@ def update_led_strip(self, now, strip, skip_weather=None):
     stop_led = int(leds_desc[1])
   num_leds = stop_led - start_led + 1
   light_span = strip.get('light_span') or 180
+  reverse = strip.get('reversed')
   
   if sun['radiation'] > 0:
     leds = sun['radiation'] / self.max_radiation * num_leds
@@ -90,5 +91,9 @@ def update_led_strip(self, now, strip, skip_weather=None):
   
   for i, color in enumerate(color_gen):
     r, g, b = color
-    if np: np[i + start_led - 1] = color
+    if np: 
+      if reverse:
+        np[i + num_leds - start_led - 1] = color
+      else:
+        np[i + start_led - 1] = color
 
