@@ -1,4 +1,17 @@
-import math
+import math, random
+
+star_seed = int(random.random()*100000)
+star_rand = star_seed
+
+
+def lcg():
+    a = 1140671485
+    c = 128201163
+    m = 2**24
+    global star_rand
+    star_rand = (a*star_rand + c) % m
+    return star_rand / m
+
 
 def update_led_strip(self, now, strip, skip_weather=None):
   sun = self.sun
@@ -34,22 +47,27 @@ def update_led_strip(self, now, strip, skip_weather=None):
   moon_brightness = max(0, math.sin(moon['altitude']) * moon['fraction'])
   moon_led = self._calc_led_index(self.moon['azimuth'], num_leds, light_span)
   moon_led = max(0, min(moon_led, num_leds-1))
-      
+  
+  global star_rand
+  star_rand = star_seed
+  
   def f(i, v, cloudiness):
-    r = max(0,v*self.sun_color.r)
-    g = max(0,v * min(self.sun_color.g, sun['altitude']*10))
-    b = max(0,v * min(self.sun_color.b, (sun['altitude']-10)*10))
 
     # stars
-    if sun['radiation'] < 0:
-      twinkle = random.random()*10 < 1
-      if twinkle:
-        r = g = b = int(random.random()*25)
+    twinkle = lcg()*10 < 1
+    r = g = b = 0
+    if twinkle:
+      r = g = b = int(random.random()*25)
 
-    if moon_brightness and abs(moon_led-i)<3:
-      r = max(0, moon_brightness * min(255, 2*math.degrees(moon['altitude'])))
+    r = max(r,v*self.sun_color.r)
+    g = max(g,v * min(self.sun_color.g, sun['altitude']*10))
+    b = max(b,v * min(self.sun_color.b, (sun['altitude']-10)*10))
+
+
+    if moon_brightness and abs(moon_led-i)<4:
+      r = max(r, moon_brightness * min(255, 2*math.degrees(moon['altitude'])))
       g = r
-      b = max(0, min(255, moon_brightness*255))
+      b = max(b, min(255, moon_brightness*255))
 
     # clouds
     if not skip_weather:

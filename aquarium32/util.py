@@ -132,3 +132,6 @@ def load_settings(self):
     print_exception(e)
     self.nps = None
 
+if hasattr(time, 'ticks_ms'): ticks_ms = time.ticks_ms
+else: ticks_ms = lambda: int(time.time() * 1000)
+

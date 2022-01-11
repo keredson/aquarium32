@@ -53,7 +53,7 @@ class Tank:
     self.state = 'realtime'
 
     self.clear()
-          
+    
     
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
@@ -131,9 +131,6 @@ class Tank:
   def update_leds(self, now, skip_weather=None):
     sun = self.sun
     moon = self.moon
-    print(
-      'state', self.state
-    )
     for strip in self.settings.strips or []:
       self.update_led_strip(now, strip, skip_weather=None)
     for np in self.nps.values():
@@ -153,6 +150,7 @@ class Tank:
         self.update_leds(when, skip_weather=True)
       except MemoryError as e:
         util.print_exception(e)
+      await asyncio.sleep(1)
     self.state = 'realtime'
   
   
@@ -172,7 +170,7 @@ class Tank:
       self.update_positions(now)
       self.update_leds(now)
       self.update_weather()
-      await asyncio.sleep(1)
+      await asyncio.sleep(.1)
 
   async def manual(self):
     while True:
@@ -197,14 +195,14 @@ class Tank:
   
   def run_tank_and_server(self, host='0.0.0.0', port=80):
     loop = asyncio.get_event_loop()
-    loop.create_task(heartbeat())
+    loop.create_task(self.heartbeat())
     loop.create_task(uttp.DEFAULT._serve(host, port))
     loop.create_task(self.main())
     loop.run_forever()
 
-async def heartbeat():
-  while True:
-    print('woot')
-    await asyncio.sleep(1)
+  async def heartbeat(self, ):
+    while True:
+      print('heartbeat', 'state', self.state, 'free mem: %ib'%gc.mem_free() if hasattr(gc, 'mem_free') else 'n/a')
+      await asyncio.sleep(10)
     
       
