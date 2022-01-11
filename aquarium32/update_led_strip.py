@@ -81,9 +81,9 @@ def update_led_strip(self, now, strip, skip_weather=None):
   
   for i, color in enumerate(color_gen):
     r, g, b = color
-    if np: 
+    if np:
       if reverse:
-        np[i + num_leds - start_led - 1] = color
+        np[start_led - 1 + num_leds - i - 1] = color
       else:
         np[i + start_led - 1] = color
 
