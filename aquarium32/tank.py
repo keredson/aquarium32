@@ -35,6 +35,7 @@ class Tank:
     self.sun_color = util.Color(255,255,255)
     self._cloudiness = 0
     self.nps = {}
+    self.stars = {}
 
     util.load_settings(self)
 
@@ -46,6 +47,7 @@ class Tank:
     self.sun = None
     self.moon = None
     self.when = None
+    self.last_updated_leds = 0
     
     self.last_weather_update = 0
     self.last_update_positions = 0
@@ -57,8 +59,7 @@ class Tank:
     
     #pir = machine.Pin(0, machine.Pin.IN)
     #pir.irq(trigger=machine.Pin.IRQ_RISING, handler=self.handle_interrupt)
-    
-      
+
   
   @property
   def latitude(self):
@@ -79,8 +80,10 @@ class Tank:
     cloudiness = self.clouds_3_hour_interval[max(0,min(cloud_i, len(self.clouds_3_hour_interval)-1))]
     return cloudiness
     
+    
   def clear(self):
-    for np in self.nps.values():
+    for pin, np in self.nps.items():
+      self.stars[pin] = []
       for i in range(np.n):
         np[i] = (0,0,0)
       np.write()
@@ -163,19 +166,36 @@ class Tank:
       await asyncio.sleep(1)
     
   async def realtime(self):
+    self.last_updated_leds = 0
     while True:
       if self.state != 'realtime': break
-      self.ntp_check()
-      now = datetime.datetime.now()
-      self.update_positions(now)
-      self.update_leds(now)
-      self.update_weather()
+      if not self.last_updated_leds or time.time()-self.last_updated_leds > 60:
+        self.last_updated_leds = time.time()
+        self.ntp_check()
+        now = datetime.datetime.now()
+        self.update_positions(now)
+        self.update_leds(now)
+        self.update_weather()
       await asyncio.sleep(1)
 
+  async def twinkle(self):
+    while True:
+      for k, np in self.nps.items():
+        stars = self.stars.get(k)
+        if stars:
+          i = stars[int(random.random()*len(stars))]
+          brightness = int(random.random()*25)
+          np[i] = brightness, brightness, brightness
+          np.write()
+      await asyncio.sleep_ms(500)
+
   async def manual(self):
+    self.last_updated_leds = 0
     while True:
       if self.state != 'manual': break
-      self.update_leds(datetime.datetime.now())
+      if not self.last_updated_leds:
+        self.last_updated_leds = time.time()
+        self.update_leds(datetime.datetime.now())
       await asyncio.sleep(1)
 
   async def off(self):
@@ -185,7 +205,8 @@ class Tank:
       await asyncio.sleep(1)
 
   async def full(self):
-    for np in self.nps.values():
+    for pin, np in self.nps.items():
+      self.stars[pin] = []
       for i in range(np.n):
         np[i] = (255,255,255)
       np.write()
@@ -196,6 +217,7 @@ class Tank:
   def run_tank_and_server(self, host='0.0.0.0', port=80):
     loop = asyncio.get_event_loop()
     loop.create_task(self.heartbeat())
+    loop.create_task(self.twinkle())
     loop.create_task(uttp.DEFAULT._serve(host, port))
     loop.create_task(self.main())
     loop.run_forever()

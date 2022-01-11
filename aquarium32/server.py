@@ -30,6 +30,7 @@ def setup(tank):
     state = req.json().get('state')
     if state:
       tank.state = state
+      tank.last_updated_leds = 0
       yield 'ok'
     else:
       yield uttp.status(400)
@@ -40,6 +41,7 @@ def setup(tank):
     if sun:
       sun['radiation'] = pysolar.util.diffuse_underclear_from_altitude(sun['altitude'])
       tank.sun = sun
+      tank.last_updated_leds = 0
       yield sun
     else:
       yield uttp.status(400)
@@ -49,6 +51,7 @@ def setup(tank):
     moon = req.json().get('moon')
     if moon:
       tank.moon = moon
+      tank.last_updated_leds = 0
       yield moon
     else:
       yield uttp.status(400)
@@ -58,6 +61,7 @@ def setup(tank):
     cloudiness = req.json().get('cloudiness')
     if cloudiness:
       tank._cloudiness = float(cloudiness)
+      tank.last_updated_leds = 0
       yield {}
     else:
       yield uttp.status(400)

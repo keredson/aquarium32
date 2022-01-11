@@ -43,18 +43,14 @@ def update_led_strip(self, now, strip, skip_weather=None):
   sun_altitude = sun['altitude']
   cloud_step = now.timestamp()
   
+  stars = []
+  self.stars[strip['pin']] = stars
+  
   def f(i, v, cloudiness):
 
-    # stars
-    twinkle = i*97 % 11 < 2
-    r = g = b = 0
-    if twinkle:
-      r = g = b = int(random.random()*25)
-
-    r = max(r,v*self.sun_color.r)
-    g = max(g,v * min(self.sun_color.g, sun_altitude*10))
-    b = max(b,v * min(self.sun_color.b, (sun_altitude-10)*10))
-
+    r = max(0, v*self.sun_color.r)
+    g = max(0, v * min(self.sun_color.g, sun_altitude*10))
+    b = max(0, v * min(self.sun_color.b, (sun_altitude-10)*10))
 
     if moon_brightness and abs(moon_led-i)<4:
       r = max(r, moon_brightness * min(255, 2*math.degrees(moon_altitude)))
@@ -73,17 +69,22 @@ def update_led_strip(self, now, strip, skip_weather=None):
       g = g*cloud_factor
       b = b*cloud_factor
 
-    return int(round(r)), int(round(g)), int(round(b))
+    return r,g,b
   
   cloudiness = self.calc_cloudiness(now)
   color_gen = (f(i, v, cloudiness) for i, v in enumerate(brightness))
   np = self.nps.get(strip['pin'])
   
+  random.seed(now.day)
   for i, color in enumerate(color_gen):
     r, g, b = color
+    np_i = start_led - 1 + num_leds - i - 1 if reverse else i + start_led - 1
+
+    # stars
+    if r==0 and g==0 and b==0 and random.random()<.1:
+      r = g = b = int(random.random()*25)
+      stars.append(np_i)
+
     if np:
-      if reverse:
-        np[start_led - 1 + num_leds - i - 1] = color
-      else:
-        np[i + start_led - 1] = color
+      np[np_i] = int(round(r)), int(round(g)), int(round(b))
 
