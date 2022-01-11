@@ -129,6 +129,9 @@ class Route:
     for ret in self.f(*args):
       if isinstance(ret, status):
         await response.start(ret)
+      if isinstance(ret, redirect):
+        await response.start(ret)
+        await response.send_header(header('Location', ret.location))
       elif isinstance(ret, header):
         await response.send_header(ret)
       elif isinstance(ret, str):
@@ -246,6 +249,12 @@ class status:
     self.code = code
     self.reason = reason or DEFAULT_CODE_REASONS.get(code, 'Other')
 
+class redirect:
+  def __init__(self, location, code=307, reason=None):
+    self.code = code
+    self.reason = reason or DEFAULT_CODE_REASONS.get(code, 'Other')
+    self.location = location
+
 class header:
   def __init__(self, k, v):
     self.k = k
@@ -255,6 +264,7 @@ class header:
 DEFAULT_CODE_REASONS = {
   200: 'OK',
   404: 'Not Found',
+  307: 'Temporary Redirect',
 }
 
 DEFAULT = App()

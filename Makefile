@@ -9,7 +9,7 @@ SRCS    := $(wildcard $(SRC)/*.py) \
 OBJ     := ./_put
 OBJS    := $(patsubst $(SRC)/%,$(OBJ)/%.done,$(SRCS))
 
-.PHONY: install clean
+.PHONY: install clean version
 
 
 $(OBJ)/%.done: $(SRC)/% | $(OBJ)
@@ -21,8 +21,12 @@ $(OBJ):
 	mkdir $@/uwifimgr
 	mkdir $@/aquarium32
 	mkdir $@/aquarium32/static
+	
+version:
+	git describe --always --tags --dirty > $(OBJ)/aquarium32/version.txt
+	ampy --port $(PORT) put $(OBJ)/aquarium32/version.txt aquarium32/version.txt
 
-install: $(OBJS)
+install: $(OBJS) version
 
 clean:
 	rm -r $(OBJ)

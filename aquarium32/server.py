@@ -9,21 +9,20 @@ import uasyncio as asyncio
 
 STATIC_PATH = 'aquarium32/static/'
 
+VERSION = None
+with open('aquarium32/version.txt') as f:
+  VERSION = f.read().strip()
+
 
 def setup(tank):
 
-  uttp.react.init(jsx_path=STATIC_PATH)
+  uttp.react.init(jsx_path=STATIC_PATH, version=VERSION, include_js='aquarium32/static/aquarium32.js')
   
   @uttp.get('/')
   def index(req):
     yield uttp.header('Cache-Control', 'max-age=%i' % 604800)
     with open(STATIC_PATH+'index.html') as f:
       yield f
-
-  @uttp.get('/static/<fn>')
-  def static_file(req, fn):
-    fn = STATIC_PATH+fn
-    yield from uttp.file(fn, max_age=None)
 
   @uttp.post('/set_state')
   def set_state(req):

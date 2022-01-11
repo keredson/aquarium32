@@ -8,6 +8,7 @@ const {
   Drawer,
   Divider,
   List, ListItem, ListItemIcon, ListItemText, 
+  FormHelperText,
 } = window.MaterialUI;
 
 class Aquarium32 extends React.Component {
@@ -42,7 +43,7 @@ class Aquarium32 extends React.Component {
 
     const drawer = (
       <div style={{width:drawer_width+'px'}}>
-        <img src='/static/fish.jpeg' style={{width:'100%', minHeight:'130px'}} />
+        <img src={__uttpreact__.root+'/fish.jpeg'} style={{width:'100%', minHeight:'130px'}} />
         <List>
           <ListItem button onClick={() => this.nav_to('')} style={{backgroundColor: page=='tank' ? '#f7f7f7' : null}}>
             <ListItemIcon>
@@ -58,6 +59,7 @@ class Aquarium32 extends React.Component {
           </ListItem>
         </List>
         <Divider />
+        <FormHelperText style={{textAlign:'center'}}>{__uttpreact__.version}</FormHelperText>
       </div>
     );
 
