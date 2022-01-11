@@ -2,6 +2,7 @@ import time, gc
 
 try: 
   import machine
+  machine.freq(240000000)
   ON_ESP32 = True
 except ModuleNotFoundError:
   ON_ESP32 = False
