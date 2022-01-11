@@ -1,5 +1,4 @@
-import os
-import re
+import gc, os, re
 
 import uttp
 import json
@@ -84,6 +83,7 @@ def init(jsx_path='static', version=None, include_js=None):
         }
       }
     '''
+    gc.collect()
     for k,v in CLASS_MAP.items():
       yield '''
         var %s = class extends ___UTTPReact_Stub__ {
