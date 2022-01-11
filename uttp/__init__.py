@@ -100,7 +100,6 @@ class Response:
     self.started_at = _ticks_ms()
     self.status_line = '↳ HTTP/1.0 %i %s\r\n' % (status.code, status.reason)
     await self.f.awrite(self.status_line.encode())
-    print('xxxxxxxxxxxx')
     self.sent_status = True
   
   async def end(self):
@@ -235,7 +234,6 @@ class App:
           break
       else:
         await response.start(status=status(404))
-        print('xxxxxxxxxxxx2')
     except OSError:
         pass
     print('Client {} disconnect')
